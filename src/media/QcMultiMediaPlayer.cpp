@@ -52,48 +52,7 @@ QcMultiMediaPlayer::QcMultiMediaPlayer(IMultiMediaNotify* pNotify)
     , m_iVideoHeight(0)
     , m_iToEndFlag(0)
 {
-#ifdef QmAPI_MODE_NEW_API_REF_COUNT_On
-    m_pVideoFrame = av_frame_alloc();
-    m_pAudioFrame = av_frame_alloc();
-#else
-    m_pVideoFrame = avcodec_alloc_frame();
-    m_pAudioFrame = avcodec_alloc_frame();
-#endif
 
-#if 0
-    AVCodec* pCodec = av_codec_next(NULL);
-    while (pCodec)
-    {
-        if (pCodec->type == AVMEDIA_TYPE_AUDIO && pCodec->id >= AV_CODEC_ID_MP2)
-        {
-            printf("\nCodecID=%d %s", pCodec->id, pCodec->name);
-            const int* supported_samplerates = pCodec->supported_samplerates;
-            if (supported_samplerates)
-            {
-                printf("\nsupported_samplerates=");
-                while (*supported_samplerates)
-                    printf("%d ", *supported_samplerates++);
-            }
-
-            const enum AVSampleFormat* sample_fmts = pCodec->sample_fmts;
-            if (sample_fmts)
-            {
-                printf("\nsample_fmts=");
-                while (*sample_fmts != -1)
-                    printf("%d ", *sample_fmts++);
-            }
-
-            const uint64_t* channel_layouts = pCodec->channel_layouts;
-            if (channel_layouts)
-            {
-                printf("channel_layouts=");
-                while (*channel_layouts)
-                    printf("%d ", av_get_channel_layout_nb_channels(*channel_layouts++));
-            }
-        }
-        pCodec = av_codec_next(pCodec);
-    }
-#endif
 }
 
 QcMultiMediaPlayer::~QcMultiMediaPlayer()
@@ -112,14 +71,6 @@ QcMultiMediaPlayer::~QcMultiMediaPlayer()
     {
         av_free(*iter);
     }
-#ifdef QmAPI_MODE_NEW_API_REF_COUNT_On
-    av_frame_free(&m_pVideoFrame);
-    av_frame_free(&m_pAudioFrame);
-#else
-    avcodec_free_frame(&m_pVideoFrame);
-    avcodec_free_frame(&m_pAudioFrame);
-#endif
-
 }
 
 void QcMultiMediaPlayer::RecoveryFrameBuf()
@@ -175,54 +126,21 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
 {
     Close();
 
-    Q_ASSERT(m_pFormatContext == NULL);
     if (avformat_open_input(&m_pFormatContext, pFile, NULL, NULL) != 0)
     {
-        QmLogNormal("Fail to Open MediaFile: %s", pFile);
         avformat_close_input(&m_pFormatContext);
         m_pFormatContext = NULL;
         return false;
     }
-    QmLogNormal("Open MediaFile: %s %p", pFile, m_pFormatContext);
     if (avformat_find_stream_info(m_pFormatContext, NULL) < 0)
     {
-        QmLogNormal("Fail to avformat_find_stream_info: %s", pFile);
     }
 
     for (int i = 0; i < m_pFormatContext->nb_streams; i++)
     {
         if (m_pFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
         {
-            QmAssert(m_iVideoStream < 0);
-            m_iVideoStream = i;
-
-            m_pVideoStream = m_pFormatContext->streams[i];
-            m_pVideoContext = m_pFormatContext->streams[m_iVideoStream]->codec;
-            AVCodec* pVideoCodec = avcodec_find_decoder(m_pVideoContext->codec_id);
-            if (pVideoCodec == NULL)
-            {
-                QmLogNormal("Couldn't find decoder[%d].\n", m_pVideoContext->codec_id);
-                break;
-            }
-#ifdef QmAPI_MODE_NEW_API_REF_COUNT_On
-            m_pVideoContext->refcounted_frames = 1;
-#else
-            m_pVideoContext->refcounted_frames = 0;
-#endif
-            if (avcodec_open2(m_pVideoContext, pVideoCodec, NULL) < 0)
-            {
-                QmLogNormal("Fail to open decoder[%d].\n", m_pVideoContext->codec_id);
-                break;
-            }
-
-            if (AV_NOPTS_VALUE != m_pVideoStream->duration)
-                m_videoTotalTime = QmBaseTimeToMSTime(m_pVideoStream->duration, m_pVideoStream->time_base);
-
-            QmLogNormal("VideoInfo: r_frame_rate=[%d,%d], avg_frame_rate=[%d,%d]", m_pVideoStream->r_frame_rate.num, m_pVideoStream->r_frame_rate.den, m_pVideoStream->avg_frame_rate.num, m_pVideoStream->avg_frame_rate.den);
-            m_iFrameRate = av_q2d(av_stream_get_r_frame_rate(m_pVideoStream));
-
-            m_iVideoWidth = m_pVideoContext->width;
-            m_iVideoHeight = m_pVideoContext->height;
+            openVideoStream(i);
         }
         else if (m_pFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && m_iAudioStream == -1)
         {
@@ -234,17 +152,12 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
             AVCodec* pAudioCodec = avcodec_find_decoder(m_pAudioContext->codec_id);
             if (pAudioCodec == NULL)
             {
-                QmLogNormal("Couldn't find audio decoder[%d].\n", m_pAudioContext->codec_id);
                 break;
             }
-#ifdef QmAPI_MODE_NEW_API_REF_COUNT_On
             m_pAudioContext->refcounted_frames = 1;
-#else
-            m_pAudioContext->refcounted_frames = 0;
-#endif
+
             if (avcodec_open2(m_pAudioContext, pAudioCodec, NULL) < 0)
             {
-                QmLogNormal("Fail to open audio decoder[%d].\n", m_pAudioContext->codec_id);
                 break;
             }
             if (av_get_channel_layout_nb_channels(m_pAudioContext->channel_layout) != m_pAudioContext->channels)
@@ -255,7 +168,6 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
             if (AV_NOPTS_VALUE != m_pAudioStream->duration)
                 m_audioTotalTime = QmBaseTimeToMSTime(m_pAudioStream->duration, m_pAudioStream->time_base);
             FFmpegParaToAudioPara(m_srcPara.m_para, m_pAudioContext->sample_rate, m_pAudioContext->sample_fmt, m_pAudioContext->channel_layout);
-            m_srcPara.iCodec = m_pAudioContext->codec_id;
             m_srcPara.iBlock_align = m_pAudioContext->block_align;
             if (m_srcPara.m_para.nChannel > 2)
             {
@@ -287,8 +199,13 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
     m_eState = eReady;
     m_iToEndFlag = 0;
 
-    QThread::start();
     return true;
+}
+
+bool QcMultiMediaPlayer::openAudioStream(int i)
+{
+    m_iAudioStream = i;
+    m_
 }
 
 bool QcMultiMediaPlayer::Close()
@@ -309,7 +226,6 @@ bool QcMultiMediaPlayer::Close()
         m_pAudioStream = NULL;
     }
 
-    QmExceptionCatch();
     //Video
     if (m_pVideoStream)
     {
@@ -317,7 +233,6 @@ bool QcMultiMediaPlayer::Close()
         m_pVideoStream = NULL;
     }
 
-    QmExceptionCatch();
     //Free Context
     if (m_pFormatContext)
     {
@@ -326,17 +241,6 @@ bool QcMultiMediaPlayer::Close()
         m_pFormatContext = NULL;
     }
 
-    QmExceptionCatch();
-    av_frame_free(&m_pVideoFrame);
-
-    QmExceptionCatch();
-    av_frame_free(&m_pAudioFrame);
-
-    while (isRunning())
-        QThread::msleep(1);
-
-    m_iVideoStream = -1;
-    m_iAudioStream = -1;
     m_videoTotalTime = 0;
     m_audioTotalTime = 0;
     m_contextStartTime = 0;
@@ -430,7 +334,7 @@ void QcMultiMediaPlayer::Seek(double fPos)
         int ret = av_read_frame(m_pFormatContext, &pkt);
         if (ret >= 0)
         {
-            if (pkt.stream_index == m_iVideoStream)
+            if (m_pVideoStream && m_pVideoStream->index && pkt.stream_index)
             {
                 QmExceptionCatch();
                 int iVideoPlayTime = m_iVideoCurTime;
@@ -441,7 +345,7 @@ void QcMultiMediaPlayer::Seek(double fPos)
                     bLoop = !DecodeVideo(&pkt, iVideoPlayTime >= m_iSeekTime);
                 }
             }
-            else if (pkt.stream_index == m_iAudioStream)
+            else if (m_pAudioStream && m_pAudioStream->index ==  pkt.stream_index)
             {
                 int iAudioPlayTime = m_iAudioCurTime;
                 if (pkt.dts != AV_NOPTS_VALUE)
@@ -490,17 +394,7 @@ void QcMultiMediaPlayer::run()
         {
             CallBack();
 
-            if (m_iVideoPacketSize + m_iAudioPacketSize > 15 * 1024 * 1024)
-            {
-                QThread::msleep(10);
-                continue;
-            }
-            if(	(m_iVideoStream < 0 || (m_DecodeVideoFrameBuf.size() >= 10))
-                    && (m_iAudioStream < 0 || (m_DecodeAudioFrameBuf.size() >= 10)) )
-            {
-                QThread::msleep(10);
-                continue;
-            }
+
             if (m_iToEndFlag)
             {
                 if (m_iToEndFlag == 1 && m_DecodeVideoFrameBuf.size() == 0 && m_DecodeAudioFrameBuf.size() == 0)

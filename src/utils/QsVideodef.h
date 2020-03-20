@@ -44,6 +44,9 @@ namespace
         FOURCC_24BG = MAKE_FOURCC('2', '4', 'B', 'G'),
         FOURCC_RGB32 = MAKE_FOURCC('R', 'G', 'B', '4'),
         FOURCC_ARGB = MAKE_FOURCC('A', 'R', 'G', 'B'),
+        FOURCC_ABGR = MAKE_FOURCC('A', 'B', 'G', 'R'),
+        FOURCC_RGBA = MAKE_FOURCC('R', 'G', 'B', 'A'),
+        FOURCC_BGRA = MAKE_FOURCC('B', 'G', 'R', 'A'),
 
         FOURCC_RGB565 = MAKE_FOURCC('R', 'G', 'B', 'P'),
         FOURCC_RGB555 = MAKE_FOURCC('R', 'G', 'B', 'O'),
@@ -76,31 +79,6 @@ namespace video {
 		/* planar 4:4:4 */
 		VIDEO_FORMAT_I444 = FOURCC_I444,
 	};
-
-    inline uint32_t toFOURCC(int format)
-    {
-        switch (format) {
-        case VIDEO_FORMAT_NONE:
-            return MAKE_FOURCC('0', '0', '0', '0');
-        case VIDEO_FORMAT_I420:
-            return MAKE_FOURCC('I', '4', '2', '0');
-        case VIDEO_FORMAT_NV12:
-            return MAKE_FOURCC('N', 'V', '1', '2');
-        case VIDEO_FORMAT_Y800:
-            return MAKE_FOURCC('Y', '8', '0', '0');
-        case VIDEO_FORMAT_YVYU:
-            return MAKE_FOURCC('Y', 'V', 'Y', 'U');
-        case VIDEO_FORMAT_YUY2:
-            return MAKE_FOURCC('Y', 'U', 'Y', '2');
-        case VIDEO_FORMAT_UYVY:
-            return MAKE_FOURCC('U', 'Y', 'V', 'Y');
-        case VIDEO_FORMAT_BGRX:
-            return MAKE_FOURCC('B', 'G', 'R', 'X');
-        case VIDEO_FORMAT_I444:
-            return MAKE_FOURCC('I', '4', '4', '4');
-        }
-        return 0;
-    }
 
 	inline uint32_t CalBufNeedSize(int width, int height, int format)
 	{
@@ -218,23 +196,43 @@ namespace video {
 		}
 	}
 
+    inline void CopyPlane(uint8_t* dst, int dst_stride,
+        const uint8_t* src, int src_stride,
+        int width, int height)
+    {
+        if (width == src_stride && width == dst_stride)
+            memcpy(dstData[0], srcData[0], width * height);
+        else
+        {
+            for (int i = 0; i < height; ++i)
+            {
+                memcpy(dst, src, width);
+                dst += dst_stride;
+                src += src_stride;
+            }
+        }
+    }
+
 	inline void CopyVideoFrame(uint8_t* dstData[QMaxSlice], uint32_t dst_linesize[QMaxSlice],
 		uint8_t* srcData[QMaxSlice], uint32_t src_linesize[QMaxSlice],
-		int format, uint32_t cy)
+		int format, uint32_t width, uint32_t height)
 	{
+        int halfwidth = (width + 1) >> 1;
+        int halfheight = (height + 1) >> 1;
+
 		switch (format) {
 		case VIDEO_FORMAT_NONE:
 			return;
 
 		case VIDEO_FORMAT_I420:
-			memcpy(dstData[0], srcData[0], std::min(src_linesize[0], dst_linesize[0]) * cy);
-			memcpy(dstData[1], srcData[1], std::min(src_linesize[1], dst_linesize[1]) * cy / 2);
-			memcpy(dstData[2], srcData[2], std::min(src_linesize[2], dst_linesize[2]) * cy / 2);
+            CopyPlane(dstData[0], dst_linesize[0], srcData[0], src_linesize[0], width, height);
+            CopyPlane(dstData[1], dst_linesize[1], srcData[1], src_linesize[1], halfwidth, halfheight);
+            CopyPlane(dstData[2], dst_linesize[2], srcData[2], src_linesize[2], halfwidth, halfheight);
 			break;
 
 		case VIDEO_FORMAT_NV12:
-			memcpy(dstData[0], srcData[0], std::min(src_linesize[0], dst_linesize[0]) * cy);
-			memcpy(dstData[1], srcData[1], std::min(src_linesize[1], dst_linesize[1]) * cy / 2);
+            CopyPlane(dstData[0], dst_linesize[0], srcData[0], src_linesize[0], width, height);
+            CopyPlane(dstData[0], dst_linesize[1], srcData[1], src_linesize[1], width, halfheight);
 			break;
 
 		case VIDEO_FORMAT_Y800:
@@ -242,13 +240,13 @@ namespace video {
 		case VIDEO_FORMAT_YUY2:
 		case VIDEO_FORMAT_UYVY:
 		case VIDEO_FORMAT_BGRX:
-			memcpy(dstData[0], srcData[0], std::min(src_linesize[0], dst_linesize[0]) * cy);
+            CopyPlane(dstData[0], dst_linesize[0], srcData[0], src_linesize[0], width, height);
 			break;
 
 		case VIDEO_FORMAT_I444:
-			memcpy(dstData[0], srcData[0], std::min(src_linesize[0], dst_linesize[0]) * cy);
-			memcpy(dstData[1], srcData[1], std::min(src_linesize[1], dst_linesize[1]) * cy);
-			memcpy(dstData[2], srcData[2], std::min(src_linesize[2], dst_linesize[2]) * cy);
+            CopyPlane(dstData[0], dst_linesize[0], srcData[0], src_linesize[0], width, height);
+            CopyPlane(dstData[1], dst_linesize[1], srcData[1], src_linesize[1], width, height);
+            CopyPlane(dstData[2], dst_linesize[2], srcData[2], src_linesize[2], width, height);
 			break;
 		}
 	}

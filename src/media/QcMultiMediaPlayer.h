@@ -10,16 +10,16 @@ struct AVPacket;
 struct QsVideoFrame;
 class QcAudioTransformat;
 
-typedef std::unique_ptr<AVFrame, std::function<void(AVFrame*)>> AVFramePtr;
 typedef std::unique_ptr<AVCodecContext, std::function<void(AVCodecContext*)>> AVCodecContextPtr;
 typedef std::unique_ptr<AVCodecParameters, std::function<void(AVCodecParameters*)>> AVCodecParametersPtr;
+
 
 class IMultiMediaNotify
 {
 public:
-	virtual void OnVideoFrame(const QsVideoFrame* pFrame) = 0;
-	virtual bool OnAudioPacket(const char* packet, int nSize) = 0;
-    virtual void OnAudioFrame(const char** arAudioData, int nb_samples, const QsAudioPara& para) = 0;
+    virtual void onMediaInfo() = 0;
+	virtual void OnVideoFrame(const AVFrameRef& frame) = 0;
+    virtual void OnAudioFrame(const AVFrameRef& frame) = 0;
 	virtual void ToEndSignal() = 0;
 };
 
@@ -42,16 +42,13 @@ public:
 	void Pause();
 	void Seek(double fPos);
 	bool Close();
-	bool ToEndSlot();
 
     bool IsPlaying() const {return m_eState == ePlaying;}
     QsPlayState GetState() const { return m_eState;}
     void SynState(QsPlayState eState);
 
-    bool HasVideo() const {return m_iVideoStream >= 0;}
-    bool HasAudio() const  {return m_iAudioStream >= 0; }
-	void GetVideoInfo(int& w, int& h, int& frameRate) const { w = m_iVideoWidth; h = m_iVideoHeight; frameRate = m_iFrameRate; }
-	const QsAudioCodeContext& GetAudioPara() const { return m_srcPara; }
+    bool HasVideo() const {return m_pVideoStream != 0;}
+    bool HasAudio() const  {return m_iAudioStream != 0; }
 
 	//ms
 	int GetCurTime() const { return m_iVideoCurTime > m_iAudioCurTime ? m_iVideoCurTime : m_iAudioCurTime; }
@@ -64,18 +61,17 @@ protected:
 	bool DecodeAudio(AVPacket* pAudioPacket);
 	void RecoveryFrameBuf();
 	AVPacket* GetUsablePacket(int iPacketType);
-protected:
+
+    bool openVideoStream(int);
+    bool openAudioStream(int);
+protected: 
 	AVFormatContext* m_pFormatContext;
 	AVStream* m_pVideoStream;
 	AVStream* m_pAudioStream;
 	AVCodecContext* m_pVideoContext;
 	AVCodecContext* m_pAudioContext;
 
-	int m_iFrameRate;
-	int m_iVideoWidth;
-	int m_iVideoHeight;
-
-	QsAudioCodeContext m_srcPara;
+    QsMediaInfo m_mediaInfo;
 
 	int m_iVideoStream;
 	int m_iAudioStream;
@@ -91,11 +87,9 @@ protected:
 	int m_iSeekTime;
 	QTime m_startTm;
 
-	AVFrame* m_pVideoFrame;
 	std::deque<AVPacket*> m_DecodeVideoFrameBuf;
 	std::vector<AVPacket*> m_UsableVideoFrameBuf;
 
-	AVFrame* m_pAudioFrame;
 	std::deque<AVPacket*> m_DecodeAudioFrameBuf;
 	std::vector<AVPacket*> m_UsableAudioFrameBuf;
     IMultiMediaNotify* m_pNotify;

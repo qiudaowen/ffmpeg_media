@@ -22,6 +22,12 @@
     <ClCompile Include="audio\QcAudioCommon.cpp" />
     <ClCompile Include="audio\QcAudioPlayer.cpp" />
     <ClCompile Include="audio\QcAudioTransformat.cpp" />
+    <ClCompile Include="AVFrameRef.cpp" />
+    <ClCompile Include="FFmpegDemuxer.cpp" />
+    <ClCompile Include="FFmpegUtils.cpp" />
+    <ClCompile Include="FFmpegVideoTransformat.cpp" />
+    <ClCompile Include="ffmpeg_raw.c" />
+    <ClCompile Include="QcFFmpegMuxer.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
     <ClCompile Include="video\QcFFMpegDecoder.cpp" />
     <ClCompile Include="video\QcFFMpegEncoder.cpp" />
@@ -29,6 +35,11 @@
   <ItemGroup>
     <ClInclude Include="audio\QcAudioPlayer.h" />
     <ClInclude Include="audio\QcAudioTransformat.h" />
+    <ClInclude Include="AVFrameRef.h" />
+    <ClInclude Include="FFmpegDemuxer.h" />
+    <ClInclude Include="FFmpegUtils.h" />
+    <ClInclude Include="FFmpegVideoTransformat.h" />
+    <ClInclude Include="QcFFmpegMuxer.h" />
     <ClInclude Include="QcMultiMediaPlayer.h" />
     <ClInclude Include="video\QcFFMpegDecoder.h" />
     <ClInclude Include="video\QcFFMpegEncoder.h" />
@@ -42,7 +53,17 @@
   <PropertyGroup Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
   </PropertyGroup>
-  <PropertyGroup Label="Configuration">
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v140_xp</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -53,11 +74,10 @@
     <Import Project="$(SolutionDir)src\props\out.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="..\..\props\depends.obs.props" />
+    <Import Project="..\props\depends.ffmpeg.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="..\..\props\depends.obs.props" />
-    <Import Project="..\..\props\package-native.props" />
+    <Import Project="..\props\depends.ffmpeg.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
