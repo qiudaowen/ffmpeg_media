@@ -1,21 +1,9 @@
 #pragma once
 
-struct QsMediaInfo
-{
-    int iFrameRate;
-    int videoFormat;
-    int iVideoWidth;
-    int iVideoHeight;
-    int videoTotalTime;
+#include "media.h"
 
-    int sample_rate;
-    int audioFormat;
-    int channels;
-    int m_audioTotalTime;
-
-    int m_fileTotalTime;
-};
-
+struct AVFormatContext;
+struct AVStream;
 class FFmpegDemuxer
 {
 public:
@@ -23,7 +11,17 @@ public:
 
     bool open(const char* file);
     void close();
+	int readPacket(AVPacketPtr& pkt);
+	int seek(double fPos);
 
+	AVStream* videoStream() 
+	{
+		return m_pVideoStream;
+	}
+	AVStream* audioStream()
+	{
+		return m_pAudioStream;
+	}
 protected:
     void openVideoStream(int i);
     void openAudioStream(int i);
