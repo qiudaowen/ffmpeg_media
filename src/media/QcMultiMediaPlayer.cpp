@@ -48,6 +48,8 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
 			m_pAudioDecoder = std::make_unique<FFmpegAudioDecoder>(pAudioStream->codecpar);
 		}
 	}
+
+
     return true;
 }
 
@@ -65,6 +67,27 @@ void QcMultiMediaPlayer::Play()
 }
 
 void QcMultiMediaPlayer::Pause()
+{
+
+}
+
+void QcMultiMediaPlayer::_start()
+{
+    m_videoThread = std::thread([this] {videoDecodeThread(); });
+    m_audioThread = std::thread([this] {audioDecodeThread(); });
+}
+
+void QcMultiMediaPlayer::demuxeThread()
+{
+
+}
+
+void QcMultiMediaPlayer::videoDecodeThread()
+{
+
+}
+
+void QcMultiMediaPlayer::audioDecodeThread()
 {
 
 }

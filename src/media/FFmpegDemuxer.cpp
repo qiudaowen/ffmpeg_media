@@ -53,6 +53,9 @@ bool FFmpegDemuxer::open(const char* pFile)
 
 void FFmpegDemuxer::close()
 {
+    if (m_demuxerThread.joinable())
+        m_demuxerThread.join();
+
     if (m_pFormatContext)
     {
         avformat_close_input(&m_pFormatContext);
@@ -60,10 +63,25 @@ void FFmpegDemuxer::close()
     }
 }
 
-int FFmpegDemuxer::readPacket(AVPacketPtr& ptr)
+void FFmpegDemuxer::start()
 {
-	int ret = av_read_frame(m_pFormatContext, ptr.get());
-	return ret;
+    m_demuxerState = eRecordExitThread;
+    m_demuxerThread = std::thread([this] {demuxeThread(); });
+}
+
+int FFmpegDemuxer::readPacket(int type, AVPacketPtr& ptr)
+{
+    bool bRet = false;
+    std::lock_guard<std::mutex> lck(m_mutex);
+    if (type == 0)
+    {
+        bRet = m_videoPacketQueue.deQueue(ptr);
+    }
+    else
+    {
+        bRet = m_audioPacketQueue.deQueue(ptr);
+    }
+	return bRet ? 0 : (m_fileEnd ? -1 : 1);
 }
 
 int FFmpegDemuxer::seek(double fPos)
@@ -74,6 +92,7 @@ int FFmpegDemuxer::seek(double fPos)
 	{
 		iRet = av_seek_frame(m_pFormatContext, -1, seek_target, AVSEEK_FLAG_FRAME);
 	}
+    m_fileEnd = false;
 	return iRet;
 }
 
@@ -101,4 +120,57 @@ void FFmpegDemuxer::openAudioStream(int i)
     m_mediaInfo.sampleRate = p_codec_par->sample_rate;
     m_mediaInfo.nChannels = p_codec_par->channels;
     m_mediaInfo.audioFormat = p_codec_par->format;
+}
+
+void FFmpegDemuxer::demuxeThread()
+{
+    for (;;)
+    {
+        m_demuxerThreadState = m_demuxerState;
+        if (m_demuxerThreadState == eRecordExitThread)
+            break;
+
+        switch (m_demuxerThreadState)
+        {
+        case eReady:
+        case ePause:
+        {
+            ::Sleep(10);
+            break;
+        }
+        case ePlaying:
+        {
+            bool bBufferFull = false;
+            {
+                std::lock_guard<std::mutex> lck(m_mutex);
+                bBufferFull = m_videoPacketQueue.packetQueueFull() || m_audioPacketQueue.packetQueueFull();
+            }
+            if (bBufferFull)
+            {
+                ::Sleep(10);
+                continue;
+            }
+
+            AVPacketPtr pkt;
+            int iRet = av_read_frame(m_pFormatContext, ptr.get());
+            if (iRet == 0)
+            {
+                std::lock_guard<std::mutex> lck(m_mutex);
+                if (pkt->stream_index == m_pVideoStream->index)
+                {
+                    m_videoPacketQueue.enQueue(pkt);
+                }
+                if (pkt->stream_index == m_pAudioStream->index)
+                {
+                    m_audioPacketQueue.enQueue(pkt);
+                }
+            }
+            else if ((iRet == AVERROR_EOF) || avio_feof(m_pFormatContext->pb))
+            {
+                m_fileEnd = true;
+            }
+            break;
+        }
+        }
+    }
 }

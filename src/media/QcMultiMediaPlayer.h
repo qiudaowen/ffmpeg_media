@@ -39,13 +39,22 @@ public:
 	int GetCurTime() const;
 	double GetTotalTime() const;
 protected:
-	void demuxeThread();
+    void _start();
+	
 	void videoDecodeThread();
 	void audioDecodeThread();
 protected: 
 	std::unique_ptr<FFmpegDemuxer> m_pDemuxer;
 	std::unique_ptr<FFmpegVideoDecoder> m_pVideoDecoder;
 	std::unique_ptr<FFmpegAudioDecoder> m_pAudioDecoder;
+    
+    int m_videoState = eReady;
+    int m_videoThreadState = eReady;
+    std::thread m_videoThread;
+
+    int m_kAudioState = eReady;
+    int m_kAudioThreadState = eReady;
+    std::thread m_audioThread;
 
     IMultiMediaNotify* m_pNotify = nullptr;
 
