@@ -44,11 +44,11 @@ AVPacketPtr FFmpegUtils::allocAVPacket()
 	});
 }
 
-int64_t FFmpegUtils::currentMilliSecsSinceEpoch()
+int FFmpegUtils::currentMilliSecsSinceEpoch()
 {
 	using namespace std::chrono;
 	auto timePoint = system_clock::now();
 	auto cur = timePoint.time_since_epoch();
 	milliseconds ms = duration_cast<milliseconds>(cur);
-	return ms.count();
+	return (int)ms.count();
 }
