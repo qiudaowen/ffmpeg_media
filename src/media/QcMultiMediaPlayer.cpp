@@ -111,7 +111,7 @@ void QcMultiMediaPlayer::Seek(int msTime)
 
 	m_iVideoCurTime = msTime;
 	m_iAudioCurTime = msTime;
-	m_iBeginSystemTime = FFmpegUtils::currentMilliSecsSinceEpoch() - msTime;
+	m_iBeginSystemTime = (int)FFmpegUtils::currentMilliSecsSinceEpoch() - msTime;
 	if (lastState == ePlaying)
 		SynState(ePlaying);
 }
@@ -166,7 +166,7 @@ int QcMultiMediaPlayer::toSystemTime(int64_t pts, AVStream* pStream)
 
 int QcMultiMediaPlayer::diffToCurrentTime(const AVFrameRef& frame)
 {
-	return FFmpegUtils::currentMilliSecsSinceEpoch() - frame.ptsSystemTime();
+	return (int)FFmpegUtils::currentMilliSecsSinceEpoch() - frame.ptsSystemTime();
 }
 
 void QcMultiMediaPlayer::demuxeThread()

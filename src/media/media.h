@@ -8,7 +8,7 @@ typedef std::shared_ptr<AVPacket> AVPacketPtr;
 
 struct QsMediaInfo
 {
-	int frameRate;
+	double frameRate;
 	int videoFormat;
 	int videoWidth;
 	int videoHeight;
