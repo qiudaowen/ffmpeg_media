@@ -4,6 +4,8 @@
 struct AVCodecContext;
 struct AVCodec;
 struct AVCodecParameters;
+struct AVPacket;
+class AVFrameRef;
 
 class FFmpegVideoDecoder
 {
@@ -19,7 +21,9 @@ public:
 	FFmpegVideoDecoder(int srcW, int srcH, int srcFormat, int codecID, bool hw = false);
 	~FFmpegVideoDecoder();
 
+	int Decode(const AVPacket* pkt, AVFrameRef& frame);
 	int Decode(const char* dataIn, int dataSize, AVFrameRef& frame);
+	void flush();
 protected:
     void Close();
     void Open(const AVCodecParameters *par, bool hw);

@@ -1,5 +1,5 @@
 ﻿#include "FFmpegUtils.h"
-#include "videodef.h"
+#include <chrono>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,4 +42,13 @@ AVPacketPtr FFmpegUtils::allocAVPacket()
 	return AVPacketPtr(av_packet_alloc(), [](AVPacket* pPkt) {
 		av_packet_free(&pPkt);
 	});
+}
+
+int64_t FFmpegUtils::currentMilliSecsSinceEpoch()
+{
+	using namespace std::chrono;
+	auto timePoint = system_clock::now();
+	auto cur = timePoint.time_since_epoch();
+	milliseconds ms = duration_cast<milliseconds>(cur);
+	return ms.count();
 }

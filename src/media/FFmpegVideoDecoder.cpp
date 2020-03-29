@@ -1,9 +1,32 @@
 #include "FFmpegVideoDecoder.h"
+#include "AVFrameRef.h"
 extern "C"{
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+}
+
+
+static AVCodec *find_hardware_decoder(enum AVCodecID id)
+{
+	AVHWAccel *hwa = av_hwaccel_next(NULL);
+	AVCodec *c = NULL;
+
+	while (hwa) {
+		if (hwa->id == id) {
+			if (hwa->pix_fmt == AV_PIX_FMT_DXVA2_VLD ||
+				hwa->pix_fmt == AV_PIX_FMT_VAAPI_VLD) {
+				c = avcodec_find_decoder_by_name(hwa->name);
+				if (c)
+					break;
+			}
+		}
+
+		hwa = av_hwaccel_next(hwa);
+	}
+
+	return c;
 }
 
 FFmpegVideoDecoder::FFmpegVideoDecoder(const AVCodecParameters *par, bool hw)
@@ -33,13 +56,13 @@ void FFmpegVideoDecoder::Open(const AVCodecParameters *par, bool hw)
 
         if (hw)
         {
-            AVCodec* pCodec = find_hardware_decoder(id);
+            AVCodec* pCodec = find_hardware_decoder(par ? par->codec_id : (AVCodecID)m_codeID);
             if (pCodec)
                 OpenCodec(par, pCodec);
         }
         if (m_pCodec == 0)
         {
-            AVCodec* pCodec = avcodec_find_decoder(id);
+            AVCodec* pCodec = avcodec_find_decoder(par ? par->codec_id : (AVCodecID)m_codeID);
             if (pCodec)
                 OpenCodec(par, pCodec);
         }
@@ -71,19 +94,15 @@ void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec
             pCodecCtx->coded_height = m_srcH;
             pCodecCtx->pix_fmt = (AVPixelFormat)m_srcFormat;
         }
-        if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
-            break;
-
+		if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+		{
+			avcodec_free_context(&pCodecCtx);
+			break;
+		}
+            
         m_pCodec = pCodec;
         m_pCodecCtx = pCodecCtx;
-        return true;
     } while (0);
-
-    if (pCodecCtx)
-    {
-        avcodec_free_context(pCodecCtx);
-    }
-    return false;
 }
 
 
@@ -91,9 +110,28 @@ void FFmpegVideoDecoder::Close()
 {
     if (m_pCodecCtx)
     {
-        avcodec_free_context(m_pCodecCtx);
+        avcodec_free_context(&m_pCodecCtx);
         m_pCodecCtx = nullptr;
     }
+}
+
+int FFmpegVideoDecoder::Decode(const AVPacket* pkt, AVFrameRef& frame)
+{
+	avcodec_send_packet(m_pCodecCtx, pkt);
+
+	AVFrameRef newFrame = AVFrameRef::allocFrame();
+	int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
+	switch (ret)
+	{
+	case AVERROR_EOF:
+		return kEOF;
+	case AVERROR(EAGAIN):
+		return kAgain;
+	case 0:
+		frame = newFrame;
+		return kOk;
+	}
+	return kOtherError;
 }
 
 
@@ -104,20 +142,10 @@ int FFmpegVideoDecoder::Decode(const char* dataIn, int dataSize, AVFrameRef& fra
 	packet.data = (uint8_t*)dataIn;
 	packet.size = dataSize;
 
-    avcodec_send_packet(m_pCodecCtx, &packet);
-    av_packet_unref(&packet);
+	return Decode(&packet, frame);
+}
 
-    AVFrameRef newFrame(true);
-    int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
-    switch (ret)
-    {
-    case AVERROR_EOF:
-        return kEOF;
-    case AVERROR(EAGAIN):
-        return kAgain;
-    case 0:
-        frame = newFrame;
-        return kOk;
-    }
-	return kOtherError;
+void FFmpegVideoDecoder::flush()
+{
+	avcodec_flush_buffers(m_pCodecCtx);
 }

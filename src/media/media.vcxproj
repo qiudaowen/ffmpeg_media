@@ -19,30 +19,28 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="audio\QcAudioCommon.cpp" />
-    <ClCompile Include="audio\QcAudioPlayer.cpp" />
-    <ClCompile Include="audio\QcAudioTransformat.cpp" />
     <ClCompile Include="AVFrameRef.cpp" />
+    <ClCompile Include="FFmpegAudioDecoder.cpp" />
     <ClCompile Include="FFmpegDemuxer.cpp" />
     <ClCompile Include="FFmpegUtils.cpp" />
+    <ClCompile Include="FFmpegVideoDecoder.cpp" />
     <ClCompile Include="FFmpegVideoTransformat.cpp" />
     <ClCompile Include="ffmpeg_raw.c" />
-    <ClCompile Include="QcFFmpegMuxer.cpp" />
+    <ClCompile Include="FrameQueue.cpp" />
+    <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
-    <ClCompile Include="video\QcFFMpegDecoder.cpp" />
-    <ClCompile Include="video\QcFFMpegEncoder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="audio\QcAudioPlayer.h" />
-    <ClInclude Include="audio\QcAudioTransformat.h" />
     <ClInclude Include="AVFrameRef.h" />
+    <ClInclude Include="FFmpegAudioDecoder.h" />
     <ClInclude Include="FFmpegDemuxer.h" />
     <ClInclude Include="FFmpegUtils.h" />
+    <ClInclude Include="FFmpegVideoDecoder.h" />
     <ClInclude Include="FFmpegVideoTransformat.h" />
-    <ClInclude Include="QcFFmpegMuxer.h" />
+    <ClInclude Include="FrameQueue.h" />
+    <ClInclude Include="media.h" />
+    <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="QcMultiMediaPlayer.h" />
-    <ClInclude Include="video\QcFFMpegDecoder.h" />
-    <ClInclude Include="video\QcFFMpegEncoder.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
@@ -75,9 +73,21 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="..\props\depends.ffmpeg.props" />
+    <Import Project="..\props\conf.props" />
+    <Import Project="..\props\common.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="..\props\depends.ffmpeg.props" />
+    <Import Project="..\props\conf.props" />
+    <Import Project="..\props\common.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="..\props\conf.props" />
+    <Import Project="..\props\common.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="..\props\conf.props" />
+    <Import Project="..\props\common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -1,4 +1,15 @@
 #include "PacketQueue.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+#include <libavutil/imgutils.h>
+#include <libswresample/swresample.h>
+#ifdef __cplusplus
+};
+#endif
 
 
 PacketQueue::PacketQueue()
@@ -6,7 +17,7 @@ PacketQueue::PacketQueue()
 
 }
 
-bool PacketQueue::enQueue(const AVPacketPtr& packet)
+bool PacketQueue::push(const AVPacketPtr& packet)
 {
     m_queue.push(packet);
     ++m_nb_packets;
@@ -14,7 +25,7 @@ bool PacketQueue::enQueue(const AVPacketPtr& packet)
     return true;
 }
 
-bool PacketQueue::deQueue(AVPacketPtr& packet)
+bool PacketQueue::pop(AVPacketPtr& packet)
 {
     if (m_queue.size())
     {
@@ -25,11 +36,6 @@ bool PacketQueue::deQueue(AVPacketPtr& packet)
         return true;
     }
     return false;
-}
-
-bool PacketQueue::packetQueueFull()
-{
-    return m_nb_packets > 20;
 }
 
 void PacketQueue::clear()

@@ -3,6 +3,8 @@
 struct AVCodecContext;
 struct AVCodec;
 struct AVCodecParameters;
+struct AVPacket;
+class AVFrameRef;
 
 class FFmpegAudioDecoder
 {
@@ -17,10 +19,12 @@ public:
 	FFmpegAudioDecoder(const AVCodecParameters *par);
 	~FFmpegAudioDecoder();
 
+	int Decode(const AVPacket* pkt, AVFrameRef& frame);
 	int Decode(const char* dataIn, int dataSize, AVFrameRef& frame);
+	void flush();
 protected:
     void Close();
-    void Open(const AVCodecParameters *par, bool hw);
+    void Open(const AVCodecParameters *par);
     void OpenCodec(const AVCodecParameters *par, AVCodec* pCodec);
 protected:
 	AVCodecContext* m_pCodecCtx = nullptr;

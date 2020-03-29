@@ -19,6 +19,11 @@ FFmpegDemuxer::FFmpegDemuxer()
 
 }
 
+FFmpegDemuxer::~FFmpegDemuxer()
+{
+
+}
+
 bool FFmpegDemuxer::open(const char* pFile)
 {
     close();
@@ -33,13 +38,13 @@ bool FFmpegDemuxer::open(const char* pFile)
     {
     }
 
-    for (int i = 0; i < m_pFormatContext->nb_streams; i++)
+    for (int i = 0; i < (int)m_pFormatContext->nb_streams; i++)
     {
-        if (m_pVideoStream && m_pFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (m_pVideoStream && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
         {
             openVideoStream(i);
         }
-        else if (m_pAudioStream && m_pFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+        else if (m_pAudioStream && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             openAudioStream(i);
         }
@@ -49,51 +54,19 @@ bool FFmpegDemuxer::open(const char* pFile)
     {
 		m_mediaInfo.iFileTotalTime = QmBaseTimeToMSTime(m_pFormatContext->duration, gContextBaseTime);
     }
+
+	return true;
 }
 
 void FFmpegDemuxer::close()
 {
-    if (m_demuxerThread.joinable())
-        m_demuxerThread.join();
-
     if (m_pFormatContext)
     {
         avformat_close_input(&m_pFormatContext);
         m_pFormatContext = NULL;
     }
-}
-
-void FFmpegDemuxer::start()
-{
-    m_demuxerState = eRecordExitThread;
-    m_demuxerThread = std::thread([this] {demuxeThread(); });
-}
-
-int FFmpegDemuxer::readPacket(int type, AVPacketPtr& ptr)
-{
-    bool bRet = false;
-    std::lock_guard<std::mutex> lck(m_mutex);
-    if (type == 0)
-    {
-        bRet = m_videoPacketQueue.deQueue(ptr);
-    }
-    else
-    {
-        bRet = m_audioPacketQueue.deQueue(ptr);
-    }
-	return bRet ? 0 : (m_fileEnd ? -1 : 1);
-}
-
-int FFmpegDemuxer::seek(double fPos)
-{
-	int64_t seek_target = QmMSTimeToBaseTime(m_mediaInfo.iFileTotalTime * fPos, gContextBaseTime);
-	int iRet = av_seek_frame(m_pFormatContext, -1, seek_target, AVSEEK_FLAG_BACKWARD);
-	if (iRet < 0)
-	{
-		iRet = av_seek_frame(m_pFormatContext, -1, seek_target, AVSEEK_FLAG_FRAME);
-	}
-    m_fileEnd = false;
-	return iRet;
+	m_pVideoStream = nullptr;
+	m_pAudioStream = nullptr;
 }
 
 void FFmpegDemuxer::openVideoStream(int i)
@@ -122,55 +95,36 @@ void FFmpegDemuxer::openAudioStream(int i)
     m_mediaInfo.audioFormat = p_codec_par->format;
 }
 
-void FFmpegDemuxer::demuxeThread()
+int FFmpegDemuxer::readPacket(AVPacketPtr& pkt)
 {
-    for (;;)
-    {
-        m_demuxerThreadState = m_demuxerState;
-        if (m_demuxerThreadState == eRecordExitThread)
-            break;
-
-        switch (m_demuxerThreadState)
-        {
-        case eReady:
-        case ePause:
-        {
-            ::Sleep(10);
-            break;
-        }
-        case ePlaying:
-        {
-            bool bBufferFull = false;
-            {
-                std::lock_guard<std::mutex> lck(m_mutex);
-                bBufferFull = m_videoPacketQueue.packetQueueFull() || m_audioPacketQueue.packetQueueFull();
-            }
-            if (bBufferFull)
-            {
-                ::Sleep(10);
-                continue;
-            }
-
-            AVPacketPtr pkt;
-            int iRet = av_read_frame(m_pFormatContext, ptr.get());
-            if (iRet == 0)
-            {
-                std::lock_guard<std::mutex> lck(m_mutex);
-                if (pkt->stream_index == m_pVideoStream->index)
-                {
-                    m_videoPacketQueue.enQueue(pkt);
-                }
-                if (pkt->stream_index == m_pAudioStream->index)
-                {
-                    m_audioPacketQueue.enQueue(pkt);
-                }
-            }
-            else if ((iRet == AVERROR_EOF) || avio_feof(m_pFormatContext->pb))
-            {
-                m_fileEnd = true;
-            }
-            break;
-        }
-        }
-    }
+	int iRet = av_read_frame(m_pFormatContext, pkt.get());
+	if (iRet < 0)
+	{
+		m_fileEnd = (iRet == AVERROR_EOF) || avio_feof(m_pFormatContext->pb);
+	}
+	else
+	{
+		m_fileEnd = false;
+	}
+	return iRet;
 }
+
+bool FFmpegDemuxer::isFileEnd()
+{
+	return m_fileEnd;
+}
+
+int FFmpegDemuxer::seek(int msTime)
+{
+	int64_t seek_target = QmMSTimeToBaseTime(msTime, gContextBaseTime);
+	int iRet = av_seek_frame(m_pFormatContext, -1, seek_target, AVSEEK_FLAG_BACKWARD);
+	if (iRet < 0)
+	{
+		iRet = av_seek_frame(m_pFormatContext, -1, seek_target, AVSEEK_FLAG_FRAME);
+	}
+	return iRet;
+}
+
+
+
+

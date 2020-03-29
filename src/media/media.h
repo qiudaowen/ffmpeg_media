@@ -1,5 +1,6 @@
 #pragma once
 
+#include "QmMacro.h"
 #include <memory>
 
 struct AVPacket;
@@ -20,3 +21,13 @@ struct QsMediaInfo
 
 	int iFileTotalTime;
 };
+
+enum QsThreadState
+{
+	eReady = 0,
+	ePlaying,
+	ePause,
+	eExitThread,
+};
+
+#define QmStdMutexLocker(mutex1) std::lock_guard<std::mutex> QmUniqueVarName(mutex1)

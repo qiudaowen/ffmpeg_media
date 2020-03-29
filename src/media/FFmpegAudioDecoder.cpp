@@ -1,11 +1,11 @@
+#include "FFmpegAudioDecoder.h"
+#include "AVFrameRef.h"
 extern "C"{
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
-
-
 
 FFmpegAudioDecoder::FFmpegAudioDecoder(const AVCodecParameters *par)
 {
@@ -17,19 +17,24 @@ FFmpegAudioDecoder::~FFmpegAudioDecoder()
 	Close();
 }
 
+void FFmpegAudioDecoder::flush()
+{
+	avcodec_flush_buffers(m_pCodecCtx);
+}
+
 void FFmpegAudioDecoder::Open(const AVCodecParameters *par)
 {
     do
     {
         Close();
 
-        AVCodec* pCodec = avcodec_find_decoder(id);
+        AVCodec* pCodec = avcodec_find_decoder(par->codec_id);
         if (pCodec)
             OpenCodec(par, pCodec);
     } while (0);
 }
 
-void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec)
+void FFmpegAudioDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec)
 {
     AVCodecContext* pCodecCtx = nullptr;
     do 
@@ -38,59 +43,55 @@ void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec
         if (pCodecCtx == NULL)
             break;
 
-            avcodec_parameters_to_context(pCodecCtx, par);
-            m_srcW = par->width;
-            m_srcH = par->height;
-            m_srcFormat = par->format;
-            m_codeID = par->codec_id;
+        avcodec_parameters_to_context(pCodecCtx, par);
 
-        if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
-            break;
-
+		if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+		{
+			avcodec_free_context(&pCodecCtx);
+			break;
+		}
+            
         m_pCodec = pCodec;
         m_pCodecCtx = pCodecCtx;
-        return true;
     } while (0);
-
-    if (pCodecCtx)
-    {
-        avcodec_free_context(pCodecCtx);
-    }
-    return false;
 }
 
 
-void FFmpegVideoDecoder::Close()
+void FFmpegAudioDecoder::Close()
 {
     if (m_pCodecCtx)
     {
-        avcodec_free_context(m_pCodecCtx);
+        avcodec_free_context(&m_pCodecCtx);
         m_pCodecCtx = nullptr;
     }
 }
 
 
-int FFmpegVideoDecoder::Decode(const char* dataIn, int dataSize, AVFrameRef& frame)
+int FFmpegAudioDecoder::Decode(const char* dataIn, int dataSize, AVFrameRef& frame)
 {
     AVPacket packet;
 	av_init_packet(&packet);
 	packet.data = (uint8_t*)dataIn;
 	packet.size = dataSize;
 
-    avcodec_send_packet(m_pCodecCtx, &packet);
-    av_packet_unref(&packet);
+	return Decode(&packet, frame);
+}
 
-    AVFrameRef newFrame(true);
-    int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
-    switch (ret)
-    {
-    case AVERROR_EOF:
-        return kEOF;
-    case AVERROR(EAGAIN):
-        return kAgain;
-    case 0:
-        frame = newFrame;
-        return kOk;
-    }
+int FFmpegAudioDecoder::Decode(const AVPacket* pkt, AVFrameRef& frame)
+{
+	avcodec_send_packet(m_pCodecCtx, pkt);
+
+	AVFrameRef newFrame = AVFrameRef::allocFrame();
+	int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
+	switch (ret)
+	{
+	case AVERROR_EOF:
+		return kEOF;
+	case AVERROR(EAGAIN):
+		return kAgain;
+	case 0:
+		frame = newFrame;
+		return kOk;
+	}
 	return kOtherError;
 }

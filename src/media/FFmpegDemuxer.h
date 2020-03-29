@@ -11,12 +11,12 @@ public:
     ~FFmpegDemuxer();
 
     bool open(const char* file);
-    void start();
-    void 
     void close();
     
-	int readPacket(int type, AVPacketPtr& pkt);
-	int seek(double fPos);
+	int readPacket(AVPacketPtr& pkt);
+	bool isFileEnd();
+	int seek(int msTime);
+	const QsMediaInfo& getMediaInfo() { return m_mediaInfo; }
 
     AVStream* videoStream() { return m_pVideoStream;}
 	AVStream* audioStream() { return m_pAudioStream;}
@@ -25,20 +25,15 @@ protected:
     void openAudioStream(int i);
 
     void demuxeThread();
+	bool isVideoPktFull();
+	bool isAudioPktFull();
+	bool isReadable();
 protected:
     AVFormatContext* m_pFormatContext = nullptr;
     AVStream* m_pVideoStream = nullptr;
     AVStream* m_pAudioStream = nullptr;
 
-    std::atomic<int> m_demuxerState = eReady;
-    std::atomic<int> m_demuxerThreadState = eReady;
-    std::thread m_demuxerThread;
-
-    std::mutex m_mutex;
-    PacketQueue m_videoPacketQueue;
-    PacketQueue m_audioPacketQueue;
-    bool m_fileEnd;
-
     QsMediaInfo m_mediaInfo;
+	bool m_fileEnd = false;
 };
 

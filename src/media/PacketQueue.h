@@ -1,15 +1,15 @@
 #pragma once
 
+#include "media.h"
 #include <queue>
 
 class PacketQueue
 {
 public:
 	PacketQueue();
-	bool enQueue(const AVPacketPtr& packet);
-	bool deQueue(AVPacketPtr& packet);
+	bool push(const AVPacketPtr& packet);
+	bool pop(AVPacketPtr& packet);
 
-    bool packetQueueFull();
     void clear();
     int packetCount() { return m_nb_packets; }
     int packetSize() { return m_packetSize; }

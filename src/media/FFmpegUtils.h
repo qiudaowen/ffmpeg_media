@@ -17,5 +17,6 @@ public:
     static int fourccToFFmpegFormat(int);
     static int ffmpegFormatToFourcc(int);
 	static AVPacketPtr allocAVPacket();
+	static int64_t currentMilliSecsSinceEpoch();
 };
  
