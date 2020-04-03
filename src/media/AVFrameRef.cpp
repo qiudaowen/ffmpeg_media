@@ -42,6 +42,17 @@ AVFrameRef AVFrameRef::allocFrame(int w, int h, int format, int pts)
 	return ret;
 }
 
+AVFrameRef allocFrame(int nb_samples, int channel_layout, int format, int pts = 0)
+{
+    AVFrameRef ret = allocFrame();
+    ret->nb_samples = nb_samples;
+    ret->channel_layout = channel_layout;
+    ret->format = format;
+    ret->pts = pts;
+    av_frame_get_buffer(ret, 0);
+    return ret;
+}
+
 uint8_t* AVFrameRef::data(int index) const
 {
 	return m_pAVFrame ? m_pAVFrame->data[index] : 0;

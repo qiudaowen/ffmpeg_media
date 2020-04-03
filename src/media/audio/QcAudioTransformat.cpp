@@ -47,8 +47,6 @@ int QcAudioTransformat::GetDelaySamples()
 
 bool QcAudioTransformat::Transformat(const char** pInData, int nb_samples, const QsAudioPara& source, const QsAudioPara& dest, char* destOut, int nBufSize, int* dest_samples)
 {
-    QmProfileFragment("TransformatAudio");
-
 	int iSampleRate = 0;
 	int iSampleFormat = 0;
 	int iChannelLayout = 0;
@@ -71,7 +69,6 @@ bool QcAudioTransformat::Transformat(const char** pInData, int nb_samples, const
 		bSame = false;
 	}
 
-    QmExceptionCatch();
     if (!bSame || m_pSwsCtx == NULL)
 	{
 		if (m_pSwsCtx != NULL)
@@ -94,7 +91,6 @@ bool QcAudioTransformat::Transformat(const char** pInData, int nb_samples, const
 		}
 	}
 
-    QmExceptionCatch();
 	int dst_nb_samples = av_rescale_rnd(nb_samples + swr_get_delay(m_pSwsCtx, iSampleRate), iDestSampleRate, iSampleRate, AV_ROUND_UP);
 	AVFrame destAudioFrame = { 0 };
 	destAudioFrame.channels = av_get_channel_layout_nb_channels(iDestChannelLayout);
@@ -106,7 +102,6 @@ bool QcAudioTransformat::Transformat(const char** pInData, int nb_samples, const
     QmAssert(nBufSize >= nDestLen);
 	avcodec_fill_audio_frame(&destAudioFrame, destAudioFrame.channels, AVSampleFormat(destAudioFrame.format), (const uint8_t*)destOut, nDestLen, 1);
 
-    QmExceptionCatch();
 	int nCount = swr_convert(m_pSwsCtx, destAudioFrame.data, destAudioFrame.nb_samples, (const uint8_t**)pInData, nb_samples);
     //QmAssert(nCount == dst_nb_samples);
 	//*dest_samples = dst_nb_samples;

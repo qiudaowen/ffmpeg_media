@@ -18,25 +18,6 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="IRef.h" />
-    <ClInclude Include="QcAny.h" />
-    <ClInclude Include="QcAtomicPointer.h" />
-    <ClInclude Include="QcBuffer.h" />
-    <ClInclude Include="QcComInit.h" />
-    <ClInclude Include="QcCriticalLock.h" />
-    <ClInclude Include="QcEvent.h" />
-    <ClInclude Include="QcMutex.h" />
-    <ClInclude Include="QcRef.h" />
-    <ClInclude Include="QcRefHolder.h" />
-    <ClInclude Include="QcRingBuffer.h" />
-    <ClInclude Include="QcSharedMemory.h" />
-    <ClInclude Include="QcVideoFrame.h" />
-    <ClInclude Include="QmMacro.h" />
-    <ClInclude Include="QsAudiodef.h" />
-    <ClInclude Include="QsBitSet.h" />
-    <ClInclude Include="QsVideodef.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7AB10D06-7299-47FB-A987-BA7808DACEC3}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

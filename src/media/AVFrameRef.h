@@ -11,6 +11,7 @@ public:
 
 	static AVFrameRef allocFrame();
 	static AVFrameRef allocFrame(int w, int h, int format, int pts = 0);
+    static AVFrameRef allocFrame(int nb_samples, int channel_layout, int format, int pts = 0);
 
     operator AVFrame* () {
         return m_pAVFrame.get();

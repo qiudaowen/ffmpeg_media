@@ -2,29 +2,6 @@ extern "C"{
 #include <libavcodec/avcodec.h>
 #include <libavdevice/avdevice.h>
 
-bool IsAudioPlanarFormat(QeSampleFormat iFormat)
-{
-    switch (iFormat)
-    {
-    case eSampleFormatU8:
-    case eSampleFormatS16:
-    case eSampleFormatS32:
-    case eSampleFormatFloat:
-    case eSampleFormatDouble:
-        return false;
-    }
-    return true;
-}
-
-int ToFFmpegAudioFormat(QeSampleFormat iFormat)
-{
-    return iFormat;
-}
-
-QeSampleFormat FromFFmpegAudioFormat(int iFFmpegFormat)
-{
-    return (QeSampleFormat)iFFmpegFormat;
-}
 
 void AudioParaToFFmpegPara(const QsAudioPara& para, int& iSampleRate, int& iFFmpegFormat, int& iChannelLayout)
 {

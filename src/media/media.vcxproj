@@ -28,7 +28,9 @@
     <ClCompile Include="ffmpeg_raw.c" />
     <ClCompile Include="FrameQueue.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
+    <ClCompile Include="QcAudioPlayer.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
+    <ClCompile Include="WSAPIPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AVFrameRef.h" />
@@ -40,7 +42,9 @@
     <ClInclude Include="FrameQueue.h" />
     <ClInclude Include="media.h" />
     <ClInclude Include="PacketQueue.h" />
+    <ClInclude Include="QcAudioPlayer.h" />
     <ClInclude Include="QcMultiMediaPlayer.h" />
+    <ClInclude Include="WSAPIPlayer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>

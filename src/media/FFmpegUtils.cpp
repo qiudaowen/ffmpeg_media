@@ -37,6 +37,16 @@ int FFmpegUtils::ffmpegFormatToFourcc(int pixelFormat)
     return pixelFormatToFourcc(pixelFormat);
 }
 
+int FFmpegUtils::ToFFmpegAudioFormat(QeSampleFormat iFormat)
+{
+    return iFormat;
+}
+
+QeSampleFormat FFmpegUtils::FromFFmpegAudioFormat(int iFFmpegFormat)
+{
+    return (QeSampleFormat)iFFmpegFormat;
+}
+
 AVPacketPtr FFmpegUtils::allocAVPacket()
 {
 	return AVPacketPtr(av_packet_alloc(), [](AVPacket* pPkt) {

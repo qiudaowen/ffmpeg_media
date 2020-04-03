@@ -1,7 +1,6 @@
 #ifndef QC_AUDIO_TRANSFORMAT_H
 #define QC_AUDIO_TRANSFORMAT_H
 
-#include "Data/Multimedia/mediaCommon.h"
 #include "Data/AudioDevice/QsAudioPara.h"
 struct SwrContext;
 struct AVFrame;

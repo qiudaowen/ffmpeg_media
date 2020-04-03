@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "media.h"
+#include "QsAudiodef.h"
 
 #define QmBaseTimeToSecondTime(value, base) (value * double(base.num) )/(base.den)
 #define QmSecondTimeToBaseTime(value, base) (int64_t)((value * double(base.den) )/(base.num))
@@ -16,6 +17,9 @@ public:
 	static const AVRational* contextBaseTime();
     static int fourccToFFmpegFormat(int);
     static int ffmpegFormatToFourcc(int);
+    static int ToFFmpegAudioFormat(QeSampleFormat iFormat);
+    static QeSampleFormat FromFFmpegAudioFormat(int iFFmpegFormat);
+
 	static AVPacketPtr allocAVPacket();
 	static int currentMilliSecsSinceEpoch();
 };

@@ -26,6 +26,7 @@ public:
 	void clear() { m_size = 0; m_read_index = 0;  m_write_index = 0; }
 	size_t size() const { return m_size; }
 	size_t capacity() const { return m_capacity; }
+    size_t usableSize() const { return m_capacity - m_size;}
 	// Return number of bytes written.
 	size_t write(const char *data, size_t bytes, bool bAutoExpand = false)
 	{
