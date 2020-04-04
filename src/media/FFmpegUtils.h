@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "media.h"
+#include "mediaPub.h"
+#include "QsMediaInfo.h"
 #include "QsAudiodef.h"
 
 #define QmBaseTimeToSecondTime(value, base) (value * double(base.num) )/(base.den)
@@ -10,7 +11,7 @@
 
 struct AVRational;
 
-class FFmpegUtils
+class MEDIA_API FFmpegUtils
 {
 public:
     static void init();

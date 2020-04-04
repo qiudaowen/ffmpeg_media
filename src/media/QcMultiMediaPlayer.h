@@ -4,7 +4,8 @@
 #include <memory>
 #include <thread>
 #include <mutex>
-#include "media.h"
+#include "mediaPub.h"
+#include "QsMediaInfo.h"
 #include "FrameQueue.h"
 #include "PacketQueue.h"
 
@@ -26,7 +27,7 @@ public:
 	virtual void ToEndSignal() = 0;
 };
 
-class QcMultiMediaPlayer
+class MEDIA_API QcMultiMediaPlayer
 {
 public:
     QcMultiMediaPlayer(IMultiMediaNotify* pNotify);
@@ -82,4 +83,5 @@ protected:
 
 	int m_iBeginSystemTime = 0;
 };
+
 #endif

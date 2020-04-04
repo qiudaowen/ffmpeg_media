@@ -16,6 +16,22 @@ enum QeSampleFormat
 	eSampleFormatFloatP,
 	eSampleFormatDoubleP,
 };
+struct QsAudioPara
+{
+	int iSamplingFreq = 0;
+	QeSampleFormat eSample_fmt = eSampleFormatNone;
+	int nChannel = 0;
+	bool operator==(const QsAudioPara& para) const
+	{
+		return iSamplingFreq == para.iSamplingFreq
+			&& eSample_fmt == para.eSample_fmt
+			&& nChannel == para.nChannel;
+	}
+	bool operator!=(const QsAudioPara& para) const
+	{
+		return !(*this == para);
+	}
+};
 inline int getBytesPerSample(QeSampleFormat format)
 {
     switch (format)
@@ -37,6 +53,10 @@ inline int getBytesPerSample(QeSampleFormat format)
         return 8;
     }
     return 0;
+}
+inline int getAudioBufferSize(const QsAudioPara& para, int nb_samples)
+{
+	return getBytesPerSample(para.eSample_fmt) * para.nChannel * nb_samples;
 }
 inline QeSampleFormat toNonPlanarFormat(QeSampleFormat format)
 {
@@ -95,30 +115,4 @@ inline bool IsAudioPlanarFormat(QeSampleFormat iFormat)
     }
     return true;
 }
-
-struct QsAudioPara
-{
-	int iSamplingFreq;
-	QeSampleFormat eSample_fmt;
-	int nChannel;
-    bool operator==(const QsAudioPara& para) const
-    {
-        return iSamplingFreq == para.iSamplingFreq
-			&& eSample_fmt == para.eSample_fmt
-			&& nChannel == para.nChannel;
-    }
-    bool operator!=(const QsAudioPara& para) const
-    {
-        return !(*this == para);
-    }
-};
-
-void AudioParaToFFmpegPara(const QsAudioPara& para, int& iSampleRate, int& iSampleFormat, int& iChannelLayout);
-void FFmpegParaToAudioPara(QsAudioPara& para, int iSampleRate, int iSampleFormat, int iChannelLayout);
-
-int CalAudioBufferSize(const QsAudioPara& para, int nb_samples);
-int CalAudioSample(const QsAudioPara& para, int nBytesCount);
-int CalAudioSample(int iSrcSamples, int iSrcRate, int iDestRate);
-bool FindBestAudioPara(int iFFMPegCodec, QsAudioPara& para);
-
 #endif

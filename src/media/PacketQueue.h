@@ -1,9 +1,10 @@
 #pragma once
 
-#include "media.h"
+#include "mediaPub.h"
+#include "QsMediaInfo.h"
 #include <queue>
 
-class PacketQueue
+class MEDIA_API PacketQueue
 {
 public:
 	PacketQueue();

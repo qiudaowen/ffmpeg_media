@@ -1,9 +1,10 @@
 #pragma once
 
+#include "mediaPub.h"
 #include <memory>
 
 struct AVFrame;
-class AVFrameRef
+class MEDIA_API AVFrameRef
 {
 public:
     AVFrameRef();
@@ -11,7 +12,7 @@ public:
 
 	static AVFrameRef allocFrame();
 	static AVFrameRef allocFrame(int w, int h, int format, int pts = 0);
-    static AVFrameRef allocFrame(int nb_samples, int channel_layout, int format, int pts = 0);
+    static AVFrameRef allocAudioFrame(int nb_samples, int nChannel, int format, int pts = 0);
 
     operator AVFrame* () {
         return m_pAVFrame.get();
@@ -28,6 +29,10 @@ public:
 	int width() const;
 	int height() const;
 	int format() const;
+
+	int sampleCount() const;
+	uint64_t channelLayout() const;
+	int channelCount() const;
 
 	int ptsSystemTime() const;
 	void setPtsSystemTime(int sysPts);

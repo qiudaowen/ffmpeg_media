@@ -39,14 +39,15 @@ AVFrameRef AVFrameRef::allocFrame(int w, int h, int format, int pts)
 	ret->format = format;
 	ret->pts = pts;
 	av_frame_get_buffer(ret, 0);
+
 	return ret;
 }
 
-AVFrameRef allocFrame(int nb_samples, int channel_layout, int format, int pts = 0)
+AVFrameRef AVFrameRef::allocAudioFrame(int nb_samples, int nChannel, int format, int pts)
 {
     AVFrameRef ret = allocFrame();
     ret->nb_samples = nb_samples;
-    ret->channel_layout = channel_layout;
+    ret->channel_layout = av_get_default_channel_layout(nChannel);
     ret->format = format;
     ret->pts = pts;
     av_frame_get_buffer(ret, 0);
@@ -86,6 +87,21 @@ int AVFrameRef::height() const
 int AVFrameRef::format() const
 {
 	return m_pAVFrame ? m_pAVFrame->format : 0;
+}
+
+int AVFrameRef::sampleCount() const
+{
+	return m_pAVFrame ? m_pAVFrame->nb_samples : 0;
+}
+
+uint64_t AVFrameRef::channelLayout() const
+{
+	return m_pAVFrame ? m_pAVFrame->channel_layout : 0;
+}
+
+int AVFrameRef::channelCount() const
+{
+	return m_pAVFrame ? av_get_channel_layout_nb_channels(m_pAVFrame->channel_layout) : 0;
 }
 
 int AVFrameRef::ptsSystemTime() const

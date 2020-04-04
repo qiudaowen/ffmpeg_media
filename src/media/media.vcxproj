@@ -29,10 +29,13 @@
     <ClCompile Include="FrameQueue.cpp" />
     <ClCompile Include="PacketQueue.cpp" />
     <ClCompile Include="QcAudioPlayer.cpp" />
+    <ClCompile Include="QcAudioTransformat.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
     <ClCompile Include="WSAPIPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\QsAudiodef.h" />
+    <ClInclude Include="..\include\QsVideodef.h" />
     <ClInclude Include="AVFrameRef.h" />
     <ClInclude Include="FFmpegAudioDecoder.h" />
     <ClInclude Include="FFmpegDemuxer.h" />
@@ -40,9 +43,9 @@
     <ClInclude Include="FFmpegVideoDecoder.h" />
     <ClInclude Include="FFmpegVideoTransformat.h" />
     <ClInclude Include="FrameQueue.h" />
-    <ClInclude Include="media.h" />
     <ClInclude Include="PacketQueue.h" />
     <ClInclude Include="QcAudioPlayer.h" />
+    <ClInclude Include="QcAudioTransformat.h" />
     <ClInclude Include="QcMultiMediaPlayer.h" />
     <ClInclude Include="WSAPIPlayer.h" />
   </ItemGroup>
@@ -107,6 +110,7 @@
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningVersion>
       </WarningVersion>
+      <PreprocessorDefinitions>MEDIA_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
@@ -116,6 +120,7 @@
     <ClCompile>
       <WarningVersion>
       </WarningVersion>
+      <PreprocessorDefinitions>MEDIA_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

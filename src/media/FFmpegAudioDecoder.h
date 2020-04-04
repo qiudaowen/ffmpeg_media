@@ -1,12 +1,14 @@
 #pragma once
 
+#include "mediaPub.h"
+
 struct AVCodecContext;
 struct AVCodec;
 struct AVCodecParameters;
 struct AVPacket;
 class AVFrameRef;
 
-class FFmpegAudioDecoder
+class MEDIA_API FFmpegAudioDecoder
 {
 public:
     enum

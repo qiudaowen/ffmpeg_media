@@ -164,10 +164,10 @@ HRESULT WSAPIPlayer::InitClient(const QsAudioPara& para, QsAudioPara* pClosestPa
             break;
         m_pRingBuffer.reset(new QcRingBuffer(m_bufferFrameCount * pUseFormat->nBlockAlign));
 
-        res = m_client->GetService(IID_IAudioRenderClient,(void**)&m_render);
+        res = m_client->GetService(__uuidof(IAudioRenderClient),(void**)&m_render);
         if (FAILED(res))
             break;
-        res = m_client->GetService(IID_IAudioStreamVolume, (void**)&m_volControl);
+        res = m_client->GetService(__uuidof(IAudioStreamVolume), (void**)&m_volControl);
 
         if (pClosestPara)
         {

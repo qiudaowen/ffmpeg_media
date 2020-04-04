@@ -1,11 +1,12 @@
 #pragma once
 
-#include "media.h"
+#include "mediaPub.h"
+#include "QsMediaInfo.h"
 #include "AVFrameRef.h"
 #include <queue>
 #include <mutex>
 
-class FrameQueue
+class MEDIA_API FrameQueue
 {
 public:
 	FrameQueue();

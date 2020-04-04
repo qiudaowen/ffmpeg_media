@@ -1,10 +1,12 @@
 #pragma once
 
-#include "media.h"
+#include "mediaPub.h"
+
+#include "QsMediaInfo.h"
 
 struct AVFormatContext;
 struct AVStream;
-class FFmpegDemuxer
+class MEDIA_API FFmpegDemuxer
 {
 public:
     FFmpegDemuxer();

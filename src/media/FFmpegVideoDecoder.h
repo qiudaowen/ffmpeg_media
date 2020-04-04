@@ -1,13 +1,15 @@
 #ifndef QC_FFMPEG_DECODER_H
 #define QC_FFMPEG_DECODER_H
 
+#include "mediaPub.h"
+
 struct AVCodecContext;
 struct AVCodec;
 struct AVCodecParameters;
 struct AVPacket;
 class AVFrameRef;
 
-class FFmpegVideoDecoder
+class MEDIA_API FFmpegVideoDecoder
 {
 public:
     enum

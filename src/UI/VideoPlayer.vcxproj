@@ -15,7 +15,7 @@
     <ProjectGuid>{146C4B23-4B37-4822-9BEB-351A955DD990}</ProjectGuid>
     <Keyword>MFCProj</Keyword>
     <RootNamespace>VideoPlayer</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -41,10 +41,12 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\props\out.props" />
+    <Import Project="..\props\common.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\props\out.props" />
+    <Import Project="..\props\common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -60,6 +62,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -84,6 +87,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>stdafx.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,6 +111,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="VideoPlayer.h" />
     <ClInclude Include="VideoPlayerDlg.h" />
+    <ClInclude Include="VideoPlayerMode.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -115,6 +120,7 @@
     </ClCompile>
     <ClCompile Include="VideoPlayer.cpp" />
     <ClCompile Include="VideoPlayerDlg.cpp" />
+    <ClCompile Include="VideoPlayerMode.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VideoPlayer.rc" />
@@ -124,6 +130,11 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\VideoPlayer.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\media\media.vcxproj">
+      <Project>{0c54486b-a367-40f6-b84b-5a0bf128c679}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

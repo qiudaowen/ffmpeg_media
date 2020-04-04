@@ -1,9 +1,10 @@
 ﻿#pragma once
 
+#include "mediaPub.h"
 #include <stdint.h>
 
 struct SwsContext;
-class FFmpegVideoTransformat
+class MEDIA_API FFmpegVideoTransformat
 {
 public:
     FFmpegVideoTransformat();
