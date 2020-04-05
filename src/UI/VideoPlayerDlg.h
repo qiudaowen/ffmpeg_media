@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <memory>
+#include "VideoPlayerMode.h"
 
+class VideoPlayerMode;
 // CVideoPlayerDlg 对话框
 class CVideoPlayerDlg : public CDialogEx
 {
@@ -31,4 +34,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+
+protected:
+	std::unique_ptr<VideoPlayerMode> m_player;
 };

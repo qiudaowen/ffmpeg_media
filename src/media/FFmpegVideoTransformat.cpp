@@ -24,7 +24,7 @@ bool FFmpegVideoTransformat::Transformat(int srcW, int srcH, int srcFormat, cons
     if (!OpenSwsContext(srcW, srcH, srcFormat, dstW, dstH, destFormat))
         return false;
 
-    sws_scale(m_pSwsCtx, (const uint8_t* const*)srcSlice, srcStride, 0, srcH, dstSlice, dstStride);
+    int iRet = sws_scale(m_pSwsCtx, (const uint8_t* const*)srcSlice, srcStride, 0, srcH, dstSlice, dstStride);
     return true;
 }
 

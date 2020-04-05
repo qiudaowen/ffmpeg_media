@@ -32,7 +32,7 @@ protected:
     void OpenCodec(const AVCodecParameters *par, AVCodec* pCodec);
 protected:
 	AVCodecContext* m_pCodecCtx = nullptr;
-	AVCodec* m_pCodec;
+	AVCodec* m_pCodec = nullptr;
 
     int m_srcW = 0;
     int m_srcH = 0;

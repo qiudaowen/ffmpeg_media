@@ -40,11 +40,11 @@ bool FFmpegDemuxer::open(const char* pFile)
 
     for (int i = 0; i < (int)m_pFormatContext->nb_streams; i++)
     {
-        if (m_pVideoStream && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (m_pVideoStream == nullptr && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
         {
             openVideoStream(i);
         }
-        else if (m_pAudioStream && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+        else if (m_pAudioStream == nullptr && m_pFormatContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             openAudioStream(i);
         }

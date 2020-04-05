@@ -33,6 +33,9 @@
     <ClInclude Include="VideoPlayerMode.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="QcDIBSection.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoPlayer.cpp">

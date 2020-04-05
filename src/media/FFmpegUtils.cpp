@@ -1,5 +1,6 @@
 ﻿#include "FFmpegUtils.h"
 #include <chrono>
+#include "QmMacro.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,9 +17,11 @@ extern "C" {
 extern "C" unsigned int fourccToPixelFormat(int);
 extern "C" unsigned int pixelFormatToFourcc(int);
 
+QmRunBeforeMain(av_register_all);
+
 void FFmpegUtils::init()
 {
-    av_register_all();
+    //av_register_all();
 }
 
 static AVRational gContextBaseTime = { 1, AV_TIME_BASE };

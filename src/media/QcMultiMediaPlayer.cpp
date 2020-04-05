@@ -86,6 +86,7 @@ void QcMultiMediaPlayer::Play()
 	if (m_playState != ePlaying)
 	{
 		SynState(ePlaying);
+		m_iBeginSystemTime = (int)FFmpegUtils::currentMilliSecsSinceEpoch() - GetCurTime();
 	}	
 }
 
@@ -158,15 +159,22 @@ int QcMultiMediaPlayer::readPacket(bool bVideo, AVPacketPtr& ptr)
 
 int QcMultiMediaPlayer::toSystemTime(int64_t pts, AVStream* pStream)
 {
+	int iTime = 0;
 	if (pStream == nullptr)
-		return m_iBeginSystemTime + QmBaseTimeToMSTime(pts, (*FFmpegUtils::contextBaseTime()));
-
-	return m_iBeginSystemTime + QmBaseTimeToMSTime(pts, pStream->time_base);
+	{
+		iTime = QmBaseTimeToMSTime(pts, (*FFmpegUtils::contextBaseTime()));
+	}
+	else
+	{
+		iTime = QmBaseTimeToMSTime(pts, pStream->time_base);
+	}
+	return m_iBeginSystemTime + iTime;
 }
 
 int QcMultiMediaPlayer::diffToCurrentTime(const AVFrameRef& frame)
 {
-	return (int)FFmpegUtils::currentMilliSecsSinceEpoch() - frame.ptsSystemTime();
+	int iDiff = (int)frame.ptsSystemTime() - FFmpegUtils::currentMilliSecsSinceEpoch();
+	return iDiff;
 }
 
 void QcMultiMediaPlayer::demuxeThread()
@@ -193,16 +201,16 @@ void QcMultiMediaPlayer::demuxeThread()
 				continue;
 			}
 
-			AVPacketPtr pkt;
+			AVPacketPtr pkt = FFmpegUtils::allocAVPacket();
 			int iRet = m_pDemuxer->readPacket(pkt);
 			if (iRet == 0)
 			{
 				std::lock_guard<std::mutex> lck(m_demuxerMutex);
-				if (pkt->stream_index == m_pDemuxer->videoStream()->index)
+				if (m_pDemuxer->videoStream() && pkt->stream_index == m_pDemuxer->videoStream()->index)
 				{
 					m_videoPacketQueue.push(pkt);
 				}
-				if (pkt->stream_index == m_pDemuxer->audioStream()->index)
+				if (m_pDemuxer->audioStream() && pkt->stream_index == m_pDemuxer->audioStream()->index)
 				{
 					m_audioPacketQueue.push(pkt);
 				}

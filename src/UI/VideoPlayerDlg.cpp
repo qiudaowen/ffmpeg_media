@@ -6,6 +6,7 @@
 #include "VideoPlayer.h"
 #include "VideoPlayerDlg.h"
 #include "afxdialogex.h"
+#include "VideoPlayerMode.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -99,6 +100,11 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+
+	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
+	m_player = std::make_unique<VideoPlayerMode>();
+	m_player->init(pWnd->GetSafeHwnd());
+	m_player->open(L"D:\\wow1080p60fps.mp4");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
