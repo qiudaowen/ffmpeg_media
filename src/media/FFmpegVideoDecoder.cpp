@@ -115,10 +115,23 @@ void FFmpegVideoDecoder::Close()
     }
 }
 
-int FFmpegVideoDecoder::Decode(const AVPacket* pkt, AVFrameRef& frame)
+int FFmpegVideoDecoder::Decode(const char* dataIn, int dataSize)
 {
-	avcodec_send_packet(m_pCodecCtx, pkt);
+	AVPacket packet;
+	av_init_packet(&packet);
+	packet.data = (uint8_t*)dataIn;
+	packet.size = dataSize;
 
+	return Decode(&packet);
+}
+
+int FFmpegVideoDecoder::Decode(const AVPacket* pkt)
+{
+	return avcodec_send_packet(m_pCodecCtx, pkt);
+}
+
+int FFmpegVideoDecoder::recv(AVFrameRef& frame)
+{
 	AVFrameRef newFrame = AVFrameRef::allocFrame();
 	int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
 	switch (ret)
@@ -134,16 +147,6 @@ int FFmpegVideoDecoder::Decode(const AVPacket* pkt, AVFrameRef& frame)
 	return kOtherError;
 }
 
-
-int FFmpegVideoDecoder::Decode(const char* dataIn, int dataSize, AVFrameRef& frame)
-{
-    AVPacket packet;
-	av_init_packet(&packet);
-	packet.data = (uint8_t*)dataIn;
-	packet.size = dataSize;
-
-	return Decode(&packet, frame);
-}
 
 void FFmpegVideoDecoder::flush()
 {

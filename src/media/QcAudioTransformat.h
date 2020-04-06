@@ -2,6 +2,7 @@
 #define QC_AUDIO_TRANSFORMAT_H
 
 #include "mediaPub.h"
+#include <stdint.h>
 #include "QsAudiodef.h"
 
 struct SwrContext;
@@ -17,7 +18,7 @@ public:
 	const QsAudioPara& srcPara() const { return m_srcInfo; }
 	const QsAudioPara& dstPara() const { return m_dstInfo; }
 	int GetDelaySamples();
-	bool Transformat(const char** data, int nb_samples, AVFrameRef& outFrame);
+	bool Transformat(const uint8_t* const data[], int nb_samples, AVFrameRef& outFrame);
 protected:
 	void CloseSwrContext();
 protected:

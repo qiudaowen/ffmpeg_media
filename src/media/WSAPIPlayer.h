@@ -20,10 +20,10 @@ public:
     ~WSAPIPlayer();
 
     bool init(const wchar_t* deviceID, const QsAudioPara& para, QsAudioPara* pClosestMatch = nullptr);
-    void start();
+    bool start();
     void stop();
 
-    void playAudio(const char* pcm, int nLen);
+    void playAudio(const uint8_t* pcm, int nLen);
     void SetVolume(float fVolume);
     float Volume() const;
 protected:

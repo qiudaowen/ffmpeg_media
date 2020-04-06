@@ -21,8 +21,9 @@ public:
 	FFmpegAudioDecoder(const AVCodecParameters *par);
 	~FFmpegAudioDecoder();
 
-	int Decode(const AVPacket* pkt, AVFrameRef& frame);
-	int Decode(const char* dataIn, int dataSize, AVFrameRef& frame);
+	int Decode(const AVPacket* pkt);
+	int Decode(const char* dataIn, int dataSize);
+	int recv(AVFrameRef& frame);
 	void flush();
 protected:
     void Close();

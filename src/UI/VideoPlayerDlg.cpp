@@ -7,6 +7,7 @@
 #include "VideoPlayerDlg.h"
 #include "afxdialogex.h"
 #include "VideoPlayerMode.h"
+#include "QcComInit.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -72,6 +73,7 @@ END_MESSAGE_MAP()
 
 BOOL CVideoPlayerDlg::OnInitDialog()
 {
+	
 	CDialogEx::OnInitDialog();
 
 	// 将“关于...”菜单项添加到系统菜单中。

@@ -56,7 +56,7 @@ void QcAudioPlayer::close()
     m_player.reset(nullptr);
 }
 
-void QcAudioPlayer::playAudio(const char* pcm, int nSamples)
+void QcAudioPlayer::playAudio(const uint8_t* pcm, int nSamples)
 {
 	if (m_player)
 	{

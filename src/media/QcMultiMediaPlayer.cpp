@@ -57,10 +57,29 @@ bool QcMultiMediaPlayer::Open(const char* pFile)
 
 bool QcMultiMediaPlayer::Close()
 {
+	SynState(eExitThread);
+	if (m_videoThread.joinable())
+		m_videoThread.join();
+	if (m_audioThread.joinable())
+		m_audioThread.join();
+	if (m_demuxerThread.joinable())
+		m_demuxerThread.join();
+
 	m_pVideoDecoder = nullptr;
 	m_pAudioDecoder = nullptr;
 	m_pDemuxer = 0;
+
+	m_bFileEnd = false;
+	m_videoDecodeEnd = false;
+	m_audioDecodeEnd = false;
     return true;
+}
+
+bool QcMultiMediaPlayer::isEnd() const
+{
+	bool bEnd = (m_videoDecodeEnd || !HasVideo()) &&
+		(m_audioDecodeEnd || !HasAudio()) && m_bFileEnd;
+	return bEnd;
 }
 
 bool QcMultiMediaPlayer::readFrame(bool bVideo, AVFrameRef& frame)
@@ -74,6 +93,11 @@ bool QcMultiMediaPlayer::readFrame(bool bVideo, AVFrameRef& frame)
 		
 	QmStdMutexLocker(m_audioQueue.mutex());
 	return m_audioQueue.pop(frame);
+}
+
+const QsMediaInfo& QcMultiMediaPlayer::getMediaInfo() const
+{
+	return m_pDemuxer->getMediaInfo();
 }
 
 int QcMultiMediaPlayer::GetTotalTime() const
@@ -109,6 +133,9 @@ void QcMultiMediaPlayer::Seek(int msTime)
 	m_pAudioDecoder->flush();
 	m_videoQueue.clear();
 	m_audioQueue.clear();
+	m_bFileEnd = false;
+	m_videoDecodeEnd = false;
+	m_audioDecodeEnd = false;
 
 	m_iVideoCurTime = msTime;
 	m_iAudioCurTime = msTime;
@@ -123,7 +150,7 @@ void QcMultiMediaPlayer::SynState(int eState)
 	m_playState = eState;
 	while ((HasVideo() && m_playState != m_videoThreadState)
 		|| (HasAudio() && m_playState != m_audioThreadState)
-		|| (m_playState != m_demuxerThreadState))
+		|| (m_demuxerThread.joinable() && m_playState != m_demuxerThreadState))
 		SwitchToThread();
 }
 
@@ -185,6 +212,11 @@ void QcMultiMediaPlayer::demuxeThread()
 		if (m_demuxerThreadState == eExitThread)
 			break;
 
+		if (m_bFileEnd)
+		{
+			::Sleep(10);
+			continue;
+		}
 		switch (m_demuxerThreadState)
 		{
 		case eReady:
@@ -215,6 +247,10 @@ void QcMultiMediaPlayer::demuxeThread()
 					m_audioPacketQueue.push(pkt);
 				}
 			}
+			else
+			{
+				m_bFileEnd = m_pDemuxer->isFileEnd();
+			}
 			break;
 		}
 		}
@@ -228,6 +264,12 @@ void QcMultiMediaPlayer::videoDecodeThread()
 		m_videoThreadState = m_playState;
 		if (m_videoThreadState == eExitThread)
 			break;
+
+		if (m_videoDecodeEnd)
+		{
+			::Sleep(10);
+			continue;
+		}
 
 		switch (m_videoThreadState)
 		{
@@ -262,19 +304,27 @@ void QcMultiMediaPlayer::videoDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(true, pkt) || m_pDemuxer->isFileEnd())
 				{
-					AVFrameRef frame;
-					int iRet = m_pVideoDecoder->Decode(pkt.get(), frame);
-					if (iRet == FFmpegVideoDecoder::kOk)
+					int iRet = m_pVideoDecoder->Decode(pkt.get());
+					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{
-						int playSysTime = toSystemTime(frame->pts, m_pDemuxer->videoStream());
-						frame.setPtsSystemTime(playSysTime);
+						AVFrameRef frame;
+						iRet = m_pVideoDecoder->recv(frame);
+						if (iRet == FFmpegVideoDecoder::kOk)
+						{
+							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->videoStream());
+							int mediaTime = playSysTime - m_iBeginSystemTime;
+							frame.setPtsSystemTime(playSysTime);
 
-						QmStdMutexLocker(m_videoQueue.mutex());
-						m_videoQueue.push(frame);
-					}
-					else if (iRet == FFmpegVideoDecoder::kEOF)
-					{
-
+							QmStdMutexLocker(m_videoQueue.mutex());
+							m_videoQueue.push(frame);
+							continue;
+						}
+						else if (iRet == FFmpegVideoDecoder::kEOF)
+						{
+							m_videoDecodeEnd = true;
+							onNotifyFileEnd();
+						}
+						break;
 					}
 				}
 			}
@@ -296,6 +346,11 @@ void QcMultiMediaPlayer::audioDecodeThread()
 		if (m_audioThreadState == eExitThread)
 			break;
 
+		if (m_audioDecodeEnd)
+		{
+			::Sleep(10);
+			continue;
+		}
 		switch (m_audioThreadState)
 		{
 		case eReady:
@@ -329,19 +384,27 @@ void QcMultiMediaPlayer::audioDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(false, pkt) || m_pDemuxer->isFileEnd())
 				{
-					AVFrameRef frame;
-					int iRet = m_pAudioDecoder->Decode(pkt.get(), frame);
-					if (iRet == FFmpegVideoDecoder::kOk)
+					int iRet = m_pAudioDecoder->Decode(pkt.get());
+					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{
-						int playSysTime = toSystemTime(frame->pts, m_pDemuxer->videoStream());
-						frame.setPtsSystemTime(playSysTime);
+						AVFrameRef frame;
+						iRet = m_pAudioDecoder->recv(frame);
+						if (iRet == FFmpegVideoDecoder::kOk)
+						{
+							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->audioStream());
+							int mediaTime = playSysTime - m_iBeginSystemTime;
+							frame.setPtsSystemTime(playSysTime);
 
-						QmStdMutexLocker(m_audioQueue.mutex());
-						m_audioQueue.push(frame);
-					}
-					else if (iRet == FFmpegVideoDecoder::kEOF)
-					{
-
+							QmStdMutexLocker(m_audioQueue.mutex());
+							m_audioQueue.push(frame);
+							continue;
+						}
+						else if (iRet == FFmpegVideoDecoder::kEOF)
+						{
+							m_audioDecodeEnd = true;
+							onNotifyFileEnd();
+						}
+						break;
 					}
 				}
 			}
@@ -352,5 +415,13 @@ void QcMultiMediaPlayer::audioDecodeThread()
 			break;
 		}
 		}
+	}
+}
+
+void QcMultiMediaPlayer::onNotifyFileEnd()
+{
+	if (m_pNotify && isEnd())
+	{
+		m_pNotify->ToEndSignal();
 	}
 }

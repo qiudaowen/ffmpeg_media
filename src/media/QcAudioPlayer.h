@@ -20,7 +20,7 @@ public:
     void stop();
 	void close();
 	
-	void playAudio(const char* pcm, int nSamples);
+	void playAudio(const uint8_t* pcm, int nSamples);
 	void setVolume(float fVolume);
     float volume() const;
 protected:

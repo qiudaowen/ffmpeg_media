@@ -23,8 +23,9 @@ public:
 	FFmpegVideoDecoder(int srcW, int srcH, int srcFormat, int codecID, bool hw = false);
 	~FFmpegVideoDecoder();
 
-	int Decode(const AVPacket* pkt, AVFrameRef& frame);
-	int Decode(const char* dataIn, int dataSize, AVFrameRef& frame);
+	int Decode(const AVPacket* pkt);
+	int Decode(const char* dataIn, int dataSize);
+	int recv(AVFrameRef& frame);
 	void flush();
 protected:
     void Close();

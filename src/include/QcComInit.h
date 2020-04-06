@@ -3,9 +3,9 @@
 #include <objbase.h>
 struct QcComInit
 {
-	QcComInit()
+	QcComInit(int flag = COINIT_MULTITHREADED)
 	{
-		CoInitializeEx(NULL, COINIT_MULTITHREADED);
+		CoInitializeEx(NULL, flag);
 	}
 	~QcComInit()
 	{

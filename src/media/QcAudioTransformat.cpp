@@ -55,7 +55,7 @@ int QcAudioTransformat::GetDelaySamples()
 	return 0;
 }
 
-bool QcAudioTransformat::Transformat(const char** srcData, int srcSamples, AVFrameRef& outFrame)
+bool QcAudioTransformat::Transformat(const uint8_t* const srcData[], int srcSamples, AVFrameRef& outFrame)
 {
 	if (m_pSwsCtx == nullptr)
 		return false;

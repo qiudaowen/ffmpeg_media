@@ -39,11 +39,12 @@ public:
 	void Seek(int msTime);
 	bool Close();
     bool IsPlaying() const {return m_playState == ePlaying;}
+	bool isEnd() const;
 	bool readFrame(bool bVideo, AVFrameRef& frame);
 
+	const QsMediaInfo& getMediaInfo() const;
     bool HasVideo() const {return m_pVideoDecoder != nullptr;}
     bool HasAudio() const  {return m_pAudioDecoder != nullptr; }
-
 	int GetCurTime() const { return m_iVideoCurTime > m_iAudioCurTime ? m_iVideoCurTime : m_iAudioCurTime; }
 	int GetTotalTime() const;
 protected:
@@ -57,6 +58,7 @@ protected:
 	void demuxeThread();
 	void videoDecodeThread();
 	void audioDecodeThread();
+	void onNotifyFileEnd();
 protected: 
 	std::unique_ptr<FFmpegDemuxer> m_pDemuxer;
 	std::unique_ptr<FFmpegVideoDecoder> m_pVideoDecoder;
@@ -78,6 +80,9 @@ protected:
 	std::mutex m_demuxerMutex;
 	PacketQueue m_videoPacketQueue;
 	PacketQueue m_audioPacketQueue;
+	bool m_bFileEnd = false;
+	bool m_videoDecodeEnd = false;
+	bool m_audioDecodeEnd = false;
 	
     IMultiMediaNotify* m_pNotify = nullptr;
 

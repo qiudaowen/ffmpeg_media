@@ -6,6 +6,7 @@
 
 #include <memory>
 #include "VideoPlayerMode.h"
+#include "QcComInit.h"
 
 class VideoPlayerMode;
 // CVideoPlayerDlg 对话框
@@ -37,4 +38,5 @@ protected:
 
 protected:
 	std::unique_ptr<VideoPlayerMode> m_player;
+	QcComInit comInit;
 };

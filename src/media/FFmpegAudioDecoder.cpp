@@ -67,20 +67,23 @@ void FFmpegAudioDecoder::Close()
 }
 
 
-int FFmpegAudioDecoder::Decode(const char* dataIn, int dataSize, AVFrameRef& frame)
+int FFmpegAudioDecoder::Decode(const char* dataIn, int dataSize)
 {
     AVPacket packet;
 	av_init_packet(&packet);
 	packet.data = (uint8_t*)dataIn;
 	packet.size = dataSize;
 
-	return Decode(&packet, frame);
+	return Decode(&packet);
 }
 
-int FFmpegAudioDecoder::Decode(const AVPacket* pkt, AVFrameRef& frame)
+int FFmpegAudioDecoder::Decode(const AVPacket* pkt)
 {
-	avcodec_send_packet(m_pCodecCtx, pkt);
+	return avcodec_send_packet(m_pCodecCtx, pkt);
+}
 
+int FFmpegAudioDecoder::recv(AVFrameRef& frame)
+{
 	AVFrameRef newFrame = AVFrameRef::allocFrame();
 	int ret = avcodec_receive_frame(m_pCodecCtx, newFrame);
 	switch (ret)
