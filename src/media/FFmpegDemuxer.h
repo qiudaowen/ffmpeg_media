@@ -25,11 +25,6 @@ public:
 protected:
     void openVideoStream(int i);
     void openAudioStream(int i);
-
-    void demuxeThread();
-	bool isVideoPktFull();
-	bool isAudioPktFull();
-	bool isReadable();
 protected:
     AVFormatContext* m_pFormatContext = nullptr;
     AVStream* m_pVideoStream = nullptr;

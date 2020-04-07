@@ -7,6 +7,7 @@
 
 struct QsAudioPara;
 class WSAPIPlayer;
+struct QcAudioPlayerPrivate;
 class MEDIA_API QcAudioPlayer
 {
 public:
@@ -24,8 +25,6 @@ public:
 	void setVolume(float fVolume);
     float volume() const;
 protected:
-	bool m_isOpen = false;
-	QsAudioPara m_openParas;
-    std::unique_ptr<WSAPIPlayer> m_player;
+    QcAudioPlayerPrivate* m_ptr;
 };
 #endif

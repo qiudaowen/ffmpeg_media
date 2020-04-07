@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include "libmedia/QcMultiMediaPlayer.h"
 #include "QcDIBSection.h"
 

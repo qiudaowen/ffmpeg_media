@@ -6,7 +6,7 @@
 #include <queue>
 #include <mutex>
 
-class MEDIA_API FrameQueue
+class FrameQueue
 {
 public:
 	FrameQueue();

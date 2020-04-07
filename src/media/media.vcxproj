@@ -31,6 +31,7 @@
     <ClCompile Include="QcAudioPlayer.cpp" />
     <ClCompile Include="QcAudioTransformat.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
+    <ClCompile Include="QcMultiMediaPlayerPrivate.cpp" />
     <ClCompile Include="WSAPIPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -47,6 +48,8 @@
     <ClInclude Include="QcAudioPlayer.h" />
     <ClInclude Include="QcAudioTransformat.h" />
     <ClInclude Include="QcMultiMediaPlayer.h" />
+    <ClInclude Include="QcMultiMediaPlayerPrivate.h" />
+    <ClInclude Include="QcVideoFrame.h" />
     <ClInclude Include="WSAPIPlayer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -105,7 +108,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <SDLCheck>false</SDLCheck>
-      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <TreatWarningAsError>false</TreatWarningAsError>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <WarningVersion>
@@ -121,6 +124,7 @@
       <WarningVersion>
       </WarningVersion>
       <PreprocessorDefinitions>MEDIA_DLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4251;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

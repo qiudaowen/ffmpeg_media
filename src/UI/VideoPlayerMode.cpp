@@ -4,6 +4,7 @@
 #include "libmedia/FFmpegVideoTransformat.h"
 #include "libmedia/QcAudioTransformat.h"
 #include "libmedia/QcAudioPlayer.h"
+#include "libmedia/AVFrameRef.h"
 #include "utils/libstring.h"
 
 VideoPlayerMode::VideoPlayerMode()
@@ -30,7 +31,7 @@ void VideoPlayerMode::init(HWND hWnd)
 
 bool VideoPlayerMode::open(const std::wstring& fileName)
 {
-	bool bRet = m_player->Open(libstring::toUtf8(fileName).c_str());
+	bool bRet = m_player->open(libstring::toUtf8(fileName).c_str());
 	if (!bRet)
 		return false;
 
@@ -50,9 +51,9 @@ bool VideoPlayerMode::open(const std::wstring& fileName)
 
 	m_audioPlayer->start();
 
-	m_player->Play();
+	m_player->play();
 
-	m_player->Seek(mediaInfo.iFileTotalTime * 0.5);
+	m_player->seek(mediaInfo.iFileTotalTime * 0.5);
 	return true;
 }
 
@@ -64,7 +65,7 @@ bool VideoPlayerMode::OnVideoFrame(const AVFrameRef& frame)
 	int h = rc.bottom - rc.top;
 	m_memorySurface.resize(w, h);
 
-	m_transFormat->Transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
+	m_transFormat->transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
 		, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface.format()), m_memorySurface.datas(), m_memorySurface.lineSizes());
 
 	HDC hDC = GetDC(m_hWnd);
@@ -76,7 +77,7 @@ bool VideoPlayerMode::OnVideoFrame(const AVFrameRef& frame)
 bool VideoPlayerMode::OnAudioFrame(const AVFrameRef& frame)
 {
 	AVFrameRef outFrame;
-	m_audioTrans->Transformat(frame.data(), frame.sampleCount(), outFrame);
+	m_audioTrans->transformat(frame.data(), frame.sampleCount(), outFrame);
 	m_audioPlayer->playAudio(outFrame.data(0), outFrame.sampleCount());
 	return true;
 }

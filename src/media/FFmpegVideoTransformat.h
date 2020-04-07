@@ -10,7 +10,7 @@ public:
     FFmpegVideoTransformat();
     ~FFmpegVideoTransformat();
 
-    bool Transformat(int srcW, int srcH, int srcFormat, const uint8_t* const srcSlice[], const int srcStride[],
+    bool transformat(int srcW, int srcH, int srcFormat, const uint8_t* const srcSlice[], const int srcStride[],
         int dstW, int dstH, int destFormat, uint8_t *const dstSlice[], const int dstStride[]);
 
 protected:

@@ -5,8 +5,15 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
+struct QcAudioTransformatPrivate
+{
+    QsAudioPara m_srcInfo;
+    QsAudioPara m_dstInfo;
+    SwrContext * m_pSwsCtx = nullptr;
+};
+
 QcAudioTransformat::QcAudioTransformat()
-	: m_pSwsCtx(nullptr)
+	: m_ptr(new QcAudioTransformatPrivate())
 {
 
 }
@@ -14,14 +21,15 @@ QcAudioTransformat::QcAudioTransformat()
 QcAudioTransformat::~QcAudioTransformat()
 {
 	CloseSwrContext();
+    delete m_ptr;
 }
 
 void QcAudioTransformat::CloseSwrContext()
 {
-	if (m_pSwsCtx)
+	if (m_ptr->m_pSwsCtx)
 	{
-		swr_free(&m_pSwsCtx);
-		m_pSwsCtx = nullptr;
+		swr_free(&m_ptr->m_pSwsCtx);
+        m_ptr->m_pSwsCtx = nullptr;
 	}
 }
 
@@ -33,42 +41,43 @@ bool QcAudioTransformat::init(const QsAudioPara& sourceInfo, const QsAudioPara& 
 	AVSampleFormat iSrcSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(sourceInfo.eSample_fmt);
 	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(destInfo.eSample_fmt);
 	
-	m_pSwsCtx = swr_alloc_set_opts(NULL, iDestChannelLayout, iDestSampleFormat, destInfo.iSamplingFreq
+    m_ptr->m_pSwsCtx = swr_alloc_set_opts(NULL, iDestChannelLayout, iDestSampleFormat, destInfo.iSamplingFreq
 		, iSrcChannelLayout, iSrcSampleFormat, sourceInfo.iSamplingFreq, 0, NULL);
-	if (swr_init(m_pSwsCtx) < 0)
+	if (swr_init(m_ptr->m_pSwsCtx) < 0)
 	{
-		swr_free(&m_pSwsCtx);
-		m_pSwsCtx = NULL;
+		swr_free(&m_ptr->m_pSwsCtx);
+        m_ptr->m_pSwsCtx = NULL;
 		return false;
 	}
-	m_srcInfo = sourceInfo;
-	m_dstInfo = destInfo;
+    m_ptr->m_srcInfo = sourceInfo;
+    m_ptr->m_dstInfo = destInfo;
 	return true;
 }
 
-int QcAudioTransformat::GetDelaySamples()
+int QcAudioTransformat::getDelaySamples()
 {
-	if (m_pSwsCtx)
+	if (m_ptr->m_pSwsCtx)
 	{
-		return (int)swr_get_delay(m_pSwsCtx, m_srcInfo.iSamplingFreq);
+		return (int)swr_get_delay(m_ptr->m_pSwsCtx, m_ptr->m_srcInfo.iSamplingFreq);
 	}
 	return 0;
 }
 
-bool QcAudioTransformat::Transformat(const uint8_t* const srcData[], int srcSamples, AVFrameRef& outFrame)
+bool QcAudioTransformat::transformat(const uint8_t* const srcData[], int srcSamples, AVFrameRef& outFrame)
 {
-	if (m_pSwsCtx == nullptr)
+	if (m_ptr->m_pSwsCtx == nullptr)
 		return false;
-	int dstNum = swr_get_out_samples(m_pSwsCtx, srcSamples);
+	int dstNum = swr_get_out_samples(m_ptr->m_pSwsCtx, srcSamples);
 
-	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(m_dstInfo.eSample_fmt);
+    int dstChannel = m_ptr->m_dstInfo.nChannel;
+	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(m_ptr->m_dstInfo.eSample_fmt);
 	if (!(outFrame.format() == iDestSampleFormat
-		&& outFrame.channelCount() == m_dstInfo.nChannel
+		&& outFrame.channelCount() == dstChannel
 		&& outFrame.sampleCount() > dstNum) )
 	{
-		outFrame = AVFrameRef::allocAudioFrame(dstNum, m_dstInfo.nChannel, iDestSampleFormat);
+		outFrame = AVFrameRef::allocAudioFrame(dstNum, dstChannel, iDestSampleFormat);
 	}
-	int nCount = swr_convert(m_pSwsCtx, outFrame->data, dstNum, (const uint8_t**)srcData, srcSamples);
+	int nCount = swr_convert(m_ptr->m_pSwsCtx, outFrame->data, dstNum, (const uint8_t**)srcData, srcSamples);
 	outFrame->nb_samples = nCount;
 	return nCount > 0;
 }

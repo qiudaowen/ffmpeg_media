@@ -4,7 +4,7 @@
 #include "QsMediaInfo.h"
 #include <queue>
 
-class MEDIA_API PacketQueue
+class PacketQueue
 {
 public:
 	PacketQueue();

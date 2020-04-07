@@ -8,6 +8,7 @@
 struct SwrContext;
 struct AVFrame;
 class AVFrameRef;
+struct QcAudioTransformatPrivate;
 class MEDIA_API QcAudioTransformat
 {
 public:
@@ -15,15 +16,13 @@ public:
 	~QcAudioTransformat();
 
 	bool init(const QsAudioPara& sourceInfo, const QsAudioPara& destInfo);
-	const QsAudioPara& srcPara() const { return m_srcInfo; }
-	const QsAudioPara& dstPara() const { return m_dstInfo; }
-	int GetDelaySamples();
-	bool Transformat(const uint8_t* const data[], int nb_samples, AVFrameRef& outFrame);
+    const QsAudioPara& srcPara() const;
+    const QsAudioPara& dstPara() const;
+	int getDelaySamples();
+	bool transformat(const uint8_t* const data[], int nb_samples, AVFrameRef& outFrame);
 protected:
 	void CloseSwrContext();
 protected:
-	QsAudioPara m_srcInfo;
-	QsAudioPara m_dstInfo;
-	SwrContext * m_pSwsCtx;
+    QcAudioTransformatPrivate* m_ptr;
 };
 #endif
