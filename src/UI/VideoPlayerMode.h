@@ -9,7 +9,7 @@ class QcMultiMediaPlayer;
 class FFmpegVideoTransformat;
 class QcAudioPlayer;
 class QcAudioTransformat;
-class VideoPlayerMode : public IMultiMediaNotify
+class VideoPlayerMode : public IMultiMediaNotify, public std::enable_shared_from_this<VideoPlayerMode>
 {
 public:
 	VideoPlayerMode();
@@ -17,6 +17,8 @@ public:
 
 	void init(HWND hWnd);
 	bool open(const std::wstring& fileName);
+protected:
+    void openNext();
 protected:
 	virtual bool OnVideoFrame(const AVFrameRef& frame);
 	virtual bool OnAudioFrame(const AVFrameRef& frame);

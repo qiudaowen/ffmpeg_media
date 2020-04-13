@@ -6,6 +6,7 @@
 #include "libmedia/QcAudioPlayer.h"
 #include "libmedia/AVFrameRef.h"
 #include "utils/libstring.h"
+#include "win/MsgWnd.h"
 
 VideoPlayerMode::VideoPlayerMode()
 {
@@ -17,7 +18,10 @@ VideoPlayerMode::VideoPlayerMode()
 
 VideoPlayerMode::~VideoPlayerMode()
 {
-
+    m_player = nullptr;
+    m_audioPlayer = nullptr;
+    m_transFormat = nullptr;
+    m_audioTrans = nullptr;
 }
 
 void VideoPlayerMode::init(HWND hWnd)
@@ -57,6 +61,12 @@ bool VideoPlayerMode::open(const std::wstring& fileName)
 	return true;
 }
 
+
+void VideoPlayerMode::openNext()
+{
+    open();
+}
+
 bool VideoPlayerMode::OnVideoFrame(const AVFrameRef& frame)
 {
 	RECT rc;
@@ -84,5 +94,10 @@ bool VideoPlayerMode::OnAudioFrame(const AVFrameRef& frame)
 
 void VideoPlayerMode::ToEndSignal()
 {
-
+    std::weak_ptr<VideoPlayerMode> weakThis = std::shared_from_this();
+    MsgWnd::mainMsgWnd()->post([weakThis]() {
+        auto pThis = weakThis.lock();
+        if (pThis)
+            pThis->openNext();
+    });
 }

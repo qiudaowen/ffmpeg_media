@@ -80,6 +80,9 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)depends\ffmpeg\bin\*.dll" "$(OutDir)" /y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -108,6 +111,9 @@
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)depends\ffmpeg\bin\*.dll" "$(OutDir)" /y</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="QcDIBSection.h" />
@@ -117,6 +123,7 @@
     <ClInclude Include="VideoPlayer.h" />
     <ClInclude Include="VideoPlayerDlg.h" />
     <ClInclude Include="VideoPlayerMode.h" />
+    <ClInclude Include="win\MsgWnd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -126,6 +133,7 @@
     <ClCompile Include="VideoPlayer.cpp" />
     <ClCompile Include="VideoPlayerDlg.cpp" />
     <ClCompile Include="VideoPlayerMode.cpp" />
+    <ClCompile Include="win\MsgWnd.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="VideoPlayer.rc" />
