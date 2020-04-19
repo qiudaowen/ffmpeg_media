@@ -122,7 +122,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="VideoPlayer.h" />
     <ClInclude Include="VideoPlayerDlg.h" />
-    <ClInclude Include="VideoPlayerMode.h" />
+    <ClInclude Include="VideoPlayerModel.h" />
     <ClInclude Include="win\MsgWnd.h" />
   </ItemGroup>
   <ItemGroup>
@@ -132,7 +132,7 @@
     </ClCompile>
     <ClCompile Include="VideoPlayer.cpp" />
     <ClCompile Include="VideoPlayerDlg.cpp" />
-    <ClCompile Include="VideoPlayerMode.cpp" />
+    <ClCompile Include="VideoPlayerModel.cpp" />
     <ClCompile Include="win\MsgWnd.cpp" />
   </ItemGroup>
   <ItemGroup>

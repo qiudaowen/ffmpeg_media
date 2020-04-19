@@ -29,7 +29,7 @@ public:
 	bool isEnd() const;
 	bool readFrame(bool bVideo, AVFrameRef& frame);
 
-	const QsMediaInfo& getMediaInfo() const;
+	const QsMediaInfo* getMediaInfo() const;
     bool hasVideo() const;
     bool hasAudio() const;
     int getCurTime() const;

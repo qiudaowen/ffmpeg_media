@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "libmedia/QcMultiMediaPlayer.h"
 #include "QcDIBSection.h"
 
@@ -9,14 +10,22 @@ class QcMultiMediaPlayer;
 class FFmpegVideoTransformat;
 class QcAudioPlayer;
 class QcAudioTransformat;
-class VideoPlayerMode : public IMultiMediaNotify, public std::enable_shared_from_this<VideoPlayerMode>
+class VideoPlayerModel : public IMultiMediaNotify, public std::enable_shared_from_this<VideoPlayerModel>
 {
 public:
-	VideoPlayerMode();
-	~VideoPlayerMode();
+	VideoPlayerModel();
+	~VideoPlayerModel();
 
 	void init(HWND hWnd);
 	bool open(const std::wstring& fileName);
+	void close();
+
+	void trigger();
+	void setVolume(double fPos);
+	void setProgress(double fPos);
+
+	void addVideoFileList(const std::vector<std::wstring>& fileList);
+	void removeVideoFileList(const std::vector<std::wstring>& fileList);
 protected:
     void openNext();
 protected:
@@ -30,4 +39,6 @@ protected:
 	std::unique_ptr<FFmpegVideoTransformat> m_transFormat;
 	std::unique_ptr<QcAudioPlayer> m_audioPlayer;
 	std::unique_ptr<QcAudioTransformat> m_audioTrans;
+
+	std::vector<std::wstring> m_fileList;
 };

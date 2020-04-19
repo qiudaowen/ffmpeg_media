@@ -5,10 +5,10 @@
 #pragma once
 
 #include <memory>
-#include "VideoPlayerMode.h"
+#include "VideoPlayerModel.h"
 #include "QcComInit.h"
 
-class VideoPlayerMode;
+class VideoPlayerModel;
 // CVideoPlayerDlg 对话框
 class CVideoPlayerDlg : public CDialogEx
 {
@@ -33,10 +33,30 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 
+public:
+	afx_msg void OnBnClickedButtonAdd();
+	afx_msg void OnBnClickedButtonPlay();
+	afx_msg void OnNMCustomdrawSliderVideo(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMCustomdrawSliderVolume(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnLbnSelchangeListVideo();
+	afx_msg void OnBnClickedButtonShowList();
+
 protected:
-	std::unique_ptr<VideoPlayerMode> m_player;
+	std::unique_ptr<VideoPlayerModel> m_playerModel;
 	QcComInit comInit;
+
+	bool m_bInitDialog = false;
+	CListBox m_videoFileList;
+
+	CRect getDlgItemRect(int id);
+	void setDlgItemRect(int id, int x, int y, int w, int h, int flag = 0);
+	void moveDlgItem(int id, int x, int y);
+	void adjustControlPos();
+public:
+	CSliderCtrl m_videoProgressSlider;
+	CSliderCtrl m_volSliderCtrl;
 };

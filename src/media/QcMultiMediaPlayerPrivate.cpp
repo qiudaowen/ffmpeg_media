@@ -57,6 +57,9 @@ bool QcMultiMediaPlayerPrivate::open(const char* pFile)
 
 bool QcMultiMediaPlayerPrivate::close()
 {
+	if (!m_pDemuxer)
+		return false;
+
 	_synState(eExitThread);
 	if (m_videoThread.joinable())
 		m_videoThread.join();
@@ -84,6 +87,9 @@ bool QcMultiMediaPlayerPrivate::isEnd() const
 
 bool QcMultiMediaPlayerPrivate::readFrame(bool bVideo, AVFrameRef& frame)
 {
+	if (!m_pDemuxer)
+		return false;
+
 	if (bVideo)
 	{
 		std::lock_guard<std::mutex> QmUniqueVarName(m_videoQueue.mutex());
@@ -95,9 +101,9 @@ bool QcMultiMediaPlayerPrivate::readFrame(bool bVideo, AVFrameRef& frame)
 	return m_audioQueue.pop(frame);
 }
 
-const QsMediaInfo& QcMultiMediaPlayerPrivate::getMediaInfo() const
+const QsMediaInfo* QcMultiMediaPlayerPrivate::getMediaInfo() const
 {
-	return m_pDemuxer->getMediaInfo();
+	return m_pDemuxer ? &(m_pDemuxer->getMediaInfo()) : NULL;
 }
 
 int QcMultiMediaPlayerPrivate::getTotalTime() const
@@ -107,6 +113,9 @@ int QcMultiMediaPlayerPrivate::getTotalTime() const
 
 void QcMultiMediaPlayerPrivate::play()
 {
+	if (m_pDemuxer == nullptr)
+		return;
+
 	if (m_playState != ePlaying)
 	{
 		_synState(ePlaying);
@@ -116,6 +125,9 @@ void QcMultiMediaPlayerPrivate::play()
 
 void QcMultiMediaPlayerPrivate::pause()
 {
+	if (m_pDemuxer == nullptr)
+		return;
+
 	if (m_playState != ePlaying)
 	{
 		_synState(ePause);
@@ -124,6 +136,9 @@ void QcMultiMediaPlayerPrivate::pause()
 
 void QcMultiMediaPlayerPrivate::seek(int msTime)
 {
+	if (m_pDemuxer == nullptr)
+		return;
+
 	int lastState = m_playState;
 	if (m_playState == ePlaying)
 		_synState(ePause);

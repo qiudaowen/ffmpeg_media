@@ -1,4 +1,4 @@
-#include "VideoPlayerMode.h"
+#include "VideoPlayerModel.h"
 #include "libmedia/QcMultiMediaPlayer.h"
 #include "libmedia/FFmpegUtils.h"
 #include "libmedia/FFmpegVideoTransformat.h"
@@ -8,7 +8,7 @@
 #include "utils/libstring.h"
 #include "win/MsgWnd.h"
 
-VideoPlayerMode::VideoPlayerMode()
+VideoPlayerModel::VideoPlayerModel()
 {
 	m_player = std::make_unique<QcMultiMediaPlayer>(this);
 	m_transFormat = std::make_unique<FFmpegVideoTransformat>();
@@ -16,7 +16,7 @@ VideoPlayerMode::VideoPlayerMode()
 	m_audioTrans = std::make_unique<QcAudioTransformat>();
 }
 
-VideoPlayerMode::~VideoPlayerMode()
+VideoPlayerModel::~VideoPlayerModel()
 {
     m_player = nullptr;
     m_audioPlayer = nullptr;
@@ -24,7 +24,7 @@ VideoPlayerMode::~VideoPlayerMode()
     m_audioTrans = nullptr;
 }
 
-void VideoPlayerMode::init(HWND hWnd)
+void VideoPlayerModel::init(HWND hWnd)
 {
 	m_hWnd = hWnd;
 
@@ -33,13 +33,13 @@ void VideoPlayerMode::init(HWND hWnd)
 	m_memorySurface.resize(rc.right - rc.left, rc.bottom - rc.top);
 }
 
-bool VideoPlayerMode::open(const std::wstring& fileName)
+bool VideoPlayerModel::open(const std::wstring& fileName)
 {
 	bool bRet = m_player->open(libstring::toUtf8(fileName).c_str());
 	if (!bRet)
 		return false;
 
-	const QsMediaInfo& mediaInfo = m_player->getMediaInfo();
+	const QsMediaInfo& mediaInfo = *(m_player->getMediaInfo());
 	QsAudioPara audioPara;
 	audioPara.iSamplingFreq = mediaInfo.sampleRate;
 	audioPara.eSample_fmt = FFmpegUtils::FromFFmpegAudioFormat(mediaInfo.audioFormat);
@@ -62,12 +62,50 @@ bool VideoPlayerMode::open(const std::wstring& fileName)
 }
 
 
-void VideoPlayerMode::openNext()
+void VideoPlayerModel::close()
 {
-    open();
+	m_player->close();
 }
 
-bool VideoPlayerMode::OnVideoFrame(const AVFrameRef& frame)
+void VideoPlayerModel::trigger()
+{
+	if (m_player->isPlaying())
+		m_player->pause();
+	else
+		m_player->play();
+}
+
+void VideoPlayerModel::setVolume(double fPos)
+{
+	m_audioPlayer->setVolume(fPos);
+}
+
+void VideoPlayerModel::setProgress(double fPos)
+{
+	m_player->seek(m_player->getTotalTime() * fPos);
+}
+
+void VideoPlayerModel::addVideoFileList(const std::vector<std::wstring>& fileList)
+{
+	m_fileList.insert(m_fileList.end(), fileList.begin(), fileList.end());
+}
+
+void VideoPlayerModel::removeVideoFileList(const std::vector<std::wstring>& fileList)
+{
+	for (const auto& file : fileList)
+	{
+		auto iter = std::find(m_fileList.begin(), m_fileList.end(), file);
+		if (iter != m_fileList.end())
+			m_fileList.erase(iter);
+	}
+}
+
+void VideoPlayerModel::openNext()
+{
+    //open();
+}
+
+bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
 {
 	RECT rc;
 	GetClientRect(m_hWnd, &rc);
@@ -84,7 +122,7 @@ bool VideoPlayerMode::OnVideoFrame(const AVFrameRef& frame)
 	return true;
 }
 
-bool VideoPlayerMode::OnAudioFrame(const AVFrameRef& frame)
+bool VideoPlayerModel::OnAudioFrame(const AVFrameRef& frame)
 {
 	AVFrameRef outFrame;
 	m_audioTrans->transformat(frame.data(), frame.sampleCount(), outFrame);
@@ -92,9 +130,9 @@ bool VideoPlayerMode::OnAudioFrame(const AVFrameRef& frame)
 	return true;
 }
 
-void VideoPlayerMode::ToEndSignal()
+void VideoPlayerModel::ToEndSignal()
 {
-    std::weak_ptr<VideoPlayerMode> weakThis = std::shared_from_this();
+    std::weak_ptr<VideoPlayerModel> weakThis = shared_from_this();
     MsgWnd::mainMsgWnd()->post([weakThis]() {
         auto pThis = weakThis.lock();
         if (pThis)

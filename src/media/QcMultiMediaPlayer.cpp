@@ -38,7 +38,7 @@ bool QcMultiMediaPlayer::readFrame(bool bVideo, AVFrameRef& frame)
     return m_ptr->readFrame(bVideo, frame);
 }
 
-const QsMediaInfo& QcMultiMediaPlayer::getMediaInfo() const
+const QsMediaInfo* QcMultiMediaPlayer::getMediaInfo() const
 {
 	return m_ptr->getMediaInfo();
 }

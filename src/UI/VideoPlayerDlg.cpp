@@ -6,8 +6,10 @@
 #include "VideoPlayer.h"
 #include "VideoPlayerDlg.h"
 #include "afxdialogex.h"
-#include "VideoPlayerMode.h"
+#include "VideoPlayerModel.h"
 #include "QcComInit.h"
+#include "win/MsgWnd.h"
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -60,12 +62,24 @@ CVideoPlayerDlg::CVideoPlayerDlg(CWnd* pParent /*=nullptr*/)
 void CVideoPlayerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST_VIDEO, m_videoFileList);
+	DDX_Control(pDX, IDC_SLIDER_VIDEO, m_videoProgressSlider);
+	DDX_Control(pDX, IDC_SLIDER_VOLUME, m_volSliderCtrl);
 }
 
 BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_SIZE()
+	
+	ON_BN_CLICKED(IDC_PLAY_PAUSE, &CVideoPlayerDlg::OnBnClickedButtonPlay)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_VIDEO, &CVideoPlayerDlg::OnNMCustomdrawSliderVideo)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_VOLUME, &CVideoPlayerDlg::OnNMCustomdrawSliderVolume)
+
+	ON_LBN_SELCHANGE(IDC_LIST_VIDEO, &CVideoPlayerDlg::OnLbnSelchangeListVideo)
+	ON_BN_CLICKED(IDC_ADD_VIDEOFILE, &CVideoPlayerDlg::OnBnClickedButtonAdd)
+	ON_BN_CLICKED(IDC_SHOW_LIST, &CVideoPlayerDlg::OnBnClickedButtonShowList)
 END_MESSAGE_MAP()
 
 
@@ -73,7 +87,6 @@ END_MESSAGE_MAP()
 
 BOOL CVideoPlayerDlg::OnInitDialog()
 {
-	
 	CDialogEx::OnInitDialog();
 
 	// 将“关于...”菜单项添加到系统菜单中。
@@ -102,11 +115,22 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	UpdateWindow();
+
+	m_bInitDialog = true;
+	MsgWnd::mainMsgWnd()->post([this]() {
+		adjustControlPos();
+		UpdateWindow();
+	});
+
+	m_videoProgressSlider.SetRange(0, 100, TRUE);
+	m_volSliderCtrl.SetRange(0, 100, TRUE);
+	
 
 	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
-	m_player = std::make_unique<VideoPlayerMode>();
-	m_player->init(pWnd->GetSafeHwnd());
-	m_player->open(L"D:\\wow1080p60fps.mp4");
+	m_playerModel = std::make_unique<VideoPlayerModel>();
+	m_playerModel->init(pWnd->GetSafeHwnd());
+	m_playerModel->open(L"D:\\wow1080p60fps.mp4");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -153,6 +177,13 @@ void CVideoPlayerDlg::OnPaint()
 	}
 }
 
+void CVideoPlayerDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+	if (m_bInitDialog)
+		adjustControlPos();
+}
+
 //当用户拖动最小化窗口时系统调用此函数取得光标
 //显示。
 HCURSOR CVideoPlayerDlg::OnQueryDragIcon()
@@ -160,3 +191,149 @@ HCURSOR CVideoPlayerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+static std::vector<CString> getOpenFileList(const wchar_t* szFilterList, CWnd* parent = nullptr, int nMaxFiles = 100)
+{
+	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_ALLOWMULTISELECT | OFN_ENABLESIZING | OFN_HIDEREADONLY, szFilterList, parent);
+	fileDlg.m_ofn.nMaxFile = nMaxFiles * MAX_PATH;
+	CString buffer;
+	fileDlg.m_ofn.lpstrFile = buffer.GetBuffer(fileDlg.m_ofn.nMaxFile + 16);
+	fileDlg.m_ofn.lpstrTitle = L"打开文件";
+	int iRet = fileDlg.DoModal();
+
+	std::vector<CString> fileList;
+	if (iRet == IDOK)
+	{
+		POSITION pos_file = fileDlg.GetStartPosition();
+		while (NULL != pos_file)
+		{
+			CString pathName = fileDlg.GetNextPathName(pos_file);
+			fileList.push_back(pathName);
+		}
+	}
+	buffer.ReleaseBuffer();
+	return fileList;
+}
+
+void CVideoPlayerDlg::OnBnClickedButtonAdd()
+{
+	TCHAR szFilter[] = _T("视频文件(*.FLV,*.mp4,*.avi,*.wmv,*.mkv)|*.FLV,*.mp4,*.avi,*.wmv,*.mkv|所有文件(*.*)|*.*||");
+	std::vector<CString> fileList = getOpenFileList(szFilter, this);
+	std::vector<std::wstring> wfileList;
+	for (const auto& item : fileList)
+	{
+		m_videoFileList.AddString(item);
+		wfileList.push_back(std::wstring(item.GetString()));
+	}
+	m_playerModel->addVideoFileList(wfileList);
+}
+
+
+void CVideoPlayerDlg::OnBnClickedButtonPlay()
+{
+	m_playerModel->trigger();
+}
+
+void CVideoPlayerDlg::OnNMCustomdrawSliderVideo(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	if (pNMCD->dwDrawStage == CDDS_PREPAINT)
+	{
+		int nPos = m_videoProgressSlider.GetPos();
+		// update static control here
+	}
+	*pResult = 0;
+}
+
+
+void CVideoPlayerDlg::OnNMCustomdrawSliderVolume(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	*pResult = 0;
+}
+
+
+void CVideoPlayerDlg::OnLbnSelchangeListVideo()
+{
+	// TODO: 在此添加控件通知处理程序代码
+}
+
+
+void CVideoPlayerDlg::OnBnClickedButtonShowList()
+{
+	m_videoFileList.ShowWindow(m_videoFileList.IsWindowVisible() ? SW_HIDE : SW_SHOW);
+	adjustControlPos();
+}
+
+CRect CVideoPlayerDlg::getDlgItemRect(int id)
+{
+	HWND hWnd;
+	CRect rect;
+	GetDlgItem(id, &hWnd);
+	::GetWindowRect(hWnd, &rect);
+	::MapWindowPoints(hWnd, ::GetParent(hWnd), (LPPOINT)&rect, 2);
+	return rect;
+}
+
+void CVideoPlayerDlg::setDlgItemRect(int id, int x, int y, int w, int h, int flag)
+{
+	HWND hWnd;
+	GetDlgItem(id, &hWnd);
+	::SetWindowPos(hWnd, NULL, x, y, w, h, SWP_NOZORDER | flag);
+}
+
+void CVideoPlayerDlg::moveDlgItem(int id, int x, int y)
+{
+	setDlgItemRect(id, x, y, 0, 0, SWP_NOSIZE);
+}
+
+void CVideoPlayerDlg::adjustControlPos()
+{
+	CRect rect;
+	GetClientRect(&rect);
+
+	CRect videoRect = getDlgItemRect(IDC_VIDEOWND);
+	CRect playTimeRect = getDlgItemRect(IDC_PLAYTIME);
+	CRect sliderVideoRect = getDlgItemRect(IDC_SLIDER_VIDEO);
+	CRect totalTimeRect = getDlgItemRect(IDC_TOTALTIME);
+	CRect playBtnRect = getDlgItemRect(IDC_PLAY_PAUSE);
+	CRect volumeTextRect = getDlgItemRect(IDC_VOL_TEXT);
+	CRect sliderVolumeRect = getDlgItemRect(IDC_SLIDER_VOLUME);
+	
+	CRect videoListRect = getDlgItemRect(IDC_LIST_VIDEO);
+	CRect addVideoFileBtnRect = getDlgItemRect(IDC_ADD_VIDEOFILE);
+	CRect showVideoListBtnRect = getDlgItemRect(IDC_SHOW_LIST);
+
+	int totalW = rect.Width();
+	int totalH = rect.Height();
+	int bottomItemH = playBtnRect.Height() + 10;
+	int bottomItemY = totalH - bottomItemH + 10;
+	int videoFileListW = m_videoFileList.IsWindowVisible() ? videoListRect.Width() : 0;
+
+	//video and processSlider
+	int sliderVideoH = sliderVideoRect.Height();
+	int videoW = totalW - videoFileListW;
+	int videoH = totalH - sliderVideoH - bottomItemH;
+	setDlgItemRect(IDC_VIDEOWND, 0, 0, videoW, videoH);
+	moveDlgItem(IDC_PLAYTIME, 0, videoH);
+	setDlgItemRect(IDC_SLIDER_VIDEO, playTimeRect.Width(), videoH, videoW - (playTimeRect.Width() + totalTimeRect.Width()), sliderVideoH);
+	moveDlgItem(IDC_TOTALTIME, videoW - totalTimeRect.Width(), videoH);
+
+	if (m_videoFileList.IsWindowVisible())
+		setDlgItemRect(IDC_LIST_VIDEO, totalW - videoFileListW, 0, videoFileListW, totalH - bottomItemH);
+
+	int bottomItemsTotalW = playBtnRect.Width() + volumeTextRect.Width() + sliderVolumeRect.Width() + showVideoListBtnRect.Width() + addVideoFileBtnRect.Width();
+	int halfSpaceW = (totalW - bottomItemsTotalW) / 2;
+	int bottomItemX = halfSpaceW;
+	moveDlgItem(IDC_PLAY_PAUSE, bottomItemX, bottomItemY);
+	bottomItemX += playBtnRect.Width();
+	moveDlgItem(IDC_VOL_TEXT,   bottomItemX, bottomItemY);
+	bottomItemX += volumeTextRect.Width();
+	moveDlgItem(IDC_SLIDER_VOLUME, bottomItemX, bottomItemY);
+	bottomItemX += sliderVolumeRect.Width();
+
+	bottomItemX += halfSpaceW;
+	moveDlgItem(IDC_ADD_VIDEOFILE, bottomItemX, bottomItemY);
+	bottomItemX += showVideoListBtnRect.Width();
+	moveDlgItem(IDC_SHOW_LIST, bottomItemX, bottomItemY);
+}
