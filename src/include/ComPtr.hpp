@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <stdint.h>
+#ifdef _WIN32
 #include <Unknwn.h>
+#endif
 
 /* Oh no I have my own com pointer class, the world is ending, how dare you
  * write your own! */
@@ -36,18 +37,28 @@ protected:
 	inline void Replace(T *p)
 	{
 		if (ptr != p) {
-			if (p)   p->AddRef();
-			if (ptr) ptr->Release();
+			if (p)
+				p->AddRef();
+			if (ptr)
+				ptr->Release();
 			ptr = p;
 		}
 	}
 
 public:
-	inline ComPtr() : ptr(nullptr)                 {}
-	inline ComPtr(T *p) : ptr(p)                   {if (ptr) ptr->AddRef();}
-	inline ComPtr(const ComPtr<T> &c) : ptr(c.ptr) {if (ptr) ptr->AddRef();}
-	inline ComPtr(ComPtr<T> &&c) : ptr(c.ptr)      {c.ptr = nullptr;}
-	inline ~ComPtr()                               {Kill();}
+	inline ComPtr() : ptr(nullptr) {}
+	inline ComPtr(T *p) : ptr(p)
+	{
+		if (ptr)
+			ptr->AddRef();
+	}
+	inline ComPtr(const ComPtr<T> &c) : ptr(c.ptr)
+	{
+		if (ptr)
+			ptr->AddRef();
+	}
+	inline ComPtr(ComPtr<T> &&c) : ptr(c.ptr) { c.ptr = nullptr; }
+	inline ~ComPtr() { Kill(); }
 
 	inline void Clear()
 	{
@@ -90,35 +101,45 @@ public:
 	inline void CopyTo(T **out)
 	{
 		if (out) {
-			if (ptr) ptr->AddRef();
+			if (ptr)
+				ptr->AddRef();
 			*out = ptr;
 		}
 	}
 
-	inline uint32_t Release()
+	inline ULONG Release()
 	{
-        uint32_t ref;
+		ULONG ref;
 
-		if (!ptr) return 0;
+		if (!ptr)
+			return 0;
 		ref = ptr->Release();
 		ptr = nullptr;
 		return ref;
 	}
 
-	inline T **Assign()                {Clear(); return &ptr;}
-	inline void Set(T *p)              {Kill(); ptr = p;}
+	inline T **Assign()
+	{
+		Clear();
+		return &ptr;
+	}
+	inline void Set(T *p)
+	{
+		Kill();
+		ptr = p;
+	}
 
-	inline T *Get() const              {return ptr;}
+	inline T *Get() const { return ptr; }
 
-	inline T **operator&()             {return Assign();}
+	inline T **operator&() { return Assign(); }
 
-	inline    operator T*() const      {return ptr;}
-	inline T *operator->() const       {return ptr;}
+	inline operator T *() const { return ptr; }
+	inline T *operator->() const { return ptr; }
 
-	inline bool operator==(T *p) const {return ptr == p;}
-	inline bool operator!=(T *p) const {return ptr != p;}
+	inline bool operator==(T *p) const { return ptr == p; }
+	inline bool operator!=(T *p) const { return ptr != p; }
 
-	inline bool operator!() const      {return !ptr;}
+	inline bool operator!() const { return !ptr; }
 };
 
 #ifdef _WIN32
@@ -129,13 +150,13 @@ public:
 	inline ComQIPtr(IUnknown *unk)
 	{
 		this->ptr = nullptr;
-		unk->QueryInterface(__uuidof(T), (void**)&this->ptr);
+		unk->QueryInterface(__uuidof(T), (void **)&this->ptr);
 	}
 
 	inline ComPtr<T> &operator=(IUnknown *unk)
 	{
 		ComPtr<T>::Clear();
-		unk->QueryInterface(__uuidof(T), (void**)&this->ptr);
+		unk->QueryInterface(__uuidof(T), (void **)&this->ptr);
 		return *this;
 	}
 };
