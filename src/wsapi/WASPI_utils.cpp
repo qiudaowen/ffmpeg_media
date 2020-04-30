@@ -1,4 +1,8 @@
+#include <Windows.h>
 #include "WASPI_utils.h"
+#include "QsAudiodef.h"
+#include <mmdeviceapi.h>
+#include <Mmreg.h>
 
 bool WASPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWaveFormat)
 {
@@ -56,7 +60,6 @@ bool WASPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pU
         {
             paras.eSample_fmt = eSampleFormatFloat;
         }
-        else if (pExFormat->SubFormat == )
         else
         {
             bOk = false;
@@ -69,8 +72,8 @@ bool WASPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pU
     }
     if (bOk)
     {
-        paras->nChannel = pUseFormat->nChannels;
-        paras->iSamplingFreq = pUseFormat->nSamplesPerSec;
+        paras.nChannel = pUseFormat->nChannels;
+        paras.iSamplingFreq = pUseFormat->nSamplesPerSec;
     }
     return bOk;
 }

@@ -24,6 +24,7 @@
   <ItemGroup>
     <ClInclude Include="libstring.h" />
     <ClInclude Include="libversion.h" />
+    <ClInclude Include="libweakBinder.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7AB10D06-7299-47FB-A987-BA7808DACEC3}</ProjectGuid>

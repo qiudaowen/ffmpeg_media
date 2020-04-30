@@ -1,8 +1,11 @@
 #include "WSAPICapture.h"
 #include "QcRingBuffer.h"
 #include "QsAudiodef.h"
+#include "QcComInit.h"
+#include "WASPI_utils.h"
 #include <mmdeviceapi.h>
 #include <Audioclient.h>
+#include <vector>
 
 #ifdef min
 #undef min
@@ -15,7 +18,7 @@
 WSAPICapture::WSAPICapture()
 {
     m_stopEvent.init();
-    m_readyPlayEvent.init();
+    m_captureReadyEvent.init();
 }
 
 WSAPICapture::~WSAPICapture()
@@ -23,8 +26,11 @@ WSAPICapture::~WSAPICapture()
     stop();
 }
 
-bool WSAPICapture::init(const wchar_t* deviceID, const QsAudioPara* para, QsAudioPara* pClosestMatch)
+bool WSAPICapture::init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para, QsAudioPara* pClosestMatch)
 {
+    stop();
+    m_bInputDevice = bInputDevice;
+
     ComPtr<IMMDeviceEnumerator> enumerator;
     HRESULT res;
 
@@ -37,7 +43,7 @@ bool WSAPICapture::init(const wchar_t* deviceID, const QsAudioPara* para, QsAudi
         if (FAILED(res))
             break;
 
-        res = InitDevice(deviceID, enumerator);
+        res = InitDevice(deviceID, bInputDevice, enumerator);
         if (FAILED(res))
             break;
 
@@ -50,12 +56,12 @@ bool WSAPICapture::init(const wchar_t* deviceID, const QsAudioPara* para, QsAudi
     return false;
 }
 
-HRESULT WSAPICapture::InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *enumerator)
+HRESULT WSAPICapture::InitDevice(const wchar_t* deviceID, bool isInputDevice, IMMDeviceEnumerator *enumerator)
 {
     HRESULT res;
 
     if (deviceID == nullptr || wcslen(deviceID) == 0) {
-        res = enumerator->GetDefaultAudioEndpoint(eCapture, eConsole, m_device.Assign());
+        res = enumerator->GetDefaultAudioEndpoint(isInputDevice ? eCapture : eRender, eConsole, m_device.Assign());
     }
     else {
         res = enumerator->GetDevice(deviceID, m_device.Assign());
@@ -63,27 +69,7 @@ HRESULT WSAPICapture::InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *e
     return res;
 }
 
-static bool toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWaveFormat)
-{
-    WAVEFORMATEX* format = pWaveFormat;
-    switch (paras.eSample_fmt)
-    {
-    case eSampleFormatFloat:
-        format->wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
-        format->wBitsPerSample = 32;
-        break;
-    }
-    format->nChannels = paras.nChannel;
-    format->nSamplesPerSec = paras.iSamplingFreq;
-    format->nBlockAlign = (format->wBitsPerSample / 8) * format->nChannels;
-    format->nAvgBytesPerSec = format->nSamplesPerSec * format->nBlockAlign;
-    format->cbSize = 0;
-
-    return true;
-}
-
-#define REFTIMES_PER_SEC  10000000
-#define REFTIMES_PER_MILLISEC  10000
+#define BUFFER_TIME_100NS (5 * 10000000)
 
 static auto coTaskMemFree = [](LPVOID pv) { if (pv) CoTaskMemFree(pv); };
 using WAVEFORMATEXPtr = std::unique_ptr<WAVEFORMATEX, decltype(coTaskMemFree)>;
@@ -99,10 +85,10 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
     std::vector<WAVEFORMATEXPtr> tryFormatList;
     if (para)
     {
-        WAVEFORMATEXPtr autioFormat(CoTaskMemAlloc(sizeof(WAVEFORMATEX)), coTaskMemFree);
-        WASPI_utils::toWAVEFORMATPCMEX(*para, audioFormat);
+        WAVEFORMATEXPtr audioFormat((WAVEFORMATEX*)CoTaskMemAlloc(sizeof(WAVEFORMATEX)), coTaskMemFree);
+        WASPI_utils::toWAVEFORMATPCMEX(*para, audioFormat.get());
 
-        tryFormatList.emplace_back(autioFormat);
+        tryFormatList.emplace_back(audioFormat);
     }
     if (pClosestPara)
     {
@@ -116,7 +102,7 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
         }
 
         {
-            WAVEFORMATPCMEX* audioFormat = CoTaskMemAlloc(sizeof(WAVEFORMATPCMEX));
+            WAVEFORMATEXTENSIBLE* audioFormat = (WAVEFORMATEXTENSIBLE*)CoTaskMemAlloc(sizeof(WAVEFORMATEXTENSIBLE));
             WAVEFORMATEX* format = &(audioFormat->Format);
             format->wFormatTag = WAVE_FORMAT_EXTENSIBLE;
             format->nChannels = 2;
@@ -128,33 +114,36 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
 
             audioFormat->Samples.wValidBitsPerSample = format->wBitsPerSample;
             audioFormat->dwChannelMask = KSAUDIO_SPEAKER_STEREO;
-            audioFormat=>SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+            audioFormat->SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
 
-            tryFormatList.emplace_back(WAVEFORMATEXPtr(audioFormat, coTaskMemFree));
+            tryFormatList.emplace_back(WAVEFORMATEXPtr((WAVEFORMATEX*)audioFormat, coTaskMemFree));
         }
     }
     
     
-    for (const auto& autioFormat : tryFormatList)
+    for (const auto& audioFormat : tryFormatList)
     {
         res = m_device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)pClient.Assign());
         if (FAILED(res))
             break;
 
         WAVEFORMATEX* pClosest = nullptr;
-        res = pClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, audioFormat, &pClosest);
+        res = pClient->IsFormatSupported(AUDCLNT_SHAREMODE_SHARED, audioFormat.get(), &pClosest);
         if (res != S_OK && res != S_FALSE)
             continue;
 
         WAVEFORMATEXPtr autioFormat(pClosest, coTaskMemFree);
 
-        WAVEFORMATEX* pUseFormat = pClosest == nullptr ? audioFormat : pClosest;
-        DWORD stream_flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
+        WAVEFORMATEX* pUseFormat = pClosest == nullptr ? audioFormat.get() : pClosest;
+        DWORD stream_flags = 0;
+        if (!m_bInputDevice)
+            stream_flags = AUDCLNT_STREAMFLAGS_LOOPBACK;
+        else
+            stream_flags = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
+
         res = pClient->Initialize(AUDCLNT_SHAREMODE_SHARED, stream_flags, 0, 0, pUseFormat, 0);
         if (FAILED(res))
             continue;
-
-        pClient->SetEventHandle(m_readyPlayEvent);
 
         res = pClient->GetBufferSize(&m_bufferFrameCount);
         if (FAILED(res))
@@ -166,6 +155,17 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
         res = pClient->GetService(__uuidof(IAudioStreamVolume), (void**)&m_volControl);
 		if (FAILED(res))
 			break;
+
+        if (!m_bInputDevice)
+        {
+                HRESULT hr = m_device->Activate(__uuidof(IAudioClient), CLSCTX_ALL, nullptr, (void**)&m_audio_render_client_for_loopback);
+                hr = m_audio_render_client_for_loopback->Initialize(AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_EVENTCALLBACK, 0, 0, pUseFormat, NULL);
+                m_audio_render_client_for_loopback->SetEventHandle(m_captureReadyEvent);
+        }
+        else
+        {
+            pClient->SetEventHandle(m_captureReadyEvent);
+        }
 
         if (pClosestPara)
         {
@@ -187,62 +187,33 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
     return res;
 }
 
-bool WSAPICapture::FillRenderEndpointBufferWithSilence(IAudioClient* client, IAudioCaptureClient* render_client)
-{
-    UINT32 endpoint_buffer_size = 0;
-    if (FAILED(client->GetBufferSize(&endpoint_buffer_size)))
-        return false;
-
-    UINT32 num_queued_frames = 0;
-    if (FAILED(client->GetCurrentPadding(&num_queued_frames)))
-        return false;
-
-    BYTE* data = NULL;
-    int num_frames_to_fill = endpoint_buffer_size - num_queued_frames;
-    if (FAILED(render_client->GetBuffer(num_frames_to_fill, &data)))
-        return false;
-
-    // Using the AUDCLNT_BUFFERFLAGS_SILENT flag eliminates the need to
-    // explicitly write silence data to the rendering buffer.
-    return SUCCEEDED(render_client->ReleaseBuffer(num_frames_to_fill, AUDCLNT_BUFFERFLAGS_SILENT));
-}
-
 bool WSAPICapture::start()
 {
-    if (!m_render)
+    if (!m_capture)
         return false;
 
-    FillRenderEndpointBufferWithSilence(m_client, m_render);
     m_stopEvent.resetEvent();
-	m_readyPlayEvent.resetEvent();
-    m_playingThread = std::thread([this]() {playThread(); });
+	m_captureReadyEvent.resetEvent();
+    m_captureThread = std::thread([this]() { captureThread(); });
     HRESULT hr = m_client->Start();
+    if (m_audio_render_client_for_loopback)
+        m_audio_render_client_for_loopback->Start();
 	return hr == S_OK;
 }
 
 void WSAPICapture::stop()
 {
-    if (!m_render)
+    if (!m_capture)
         return;
 
 	if (m_client)
 		m_client->Stop();
-	if (m_playingThread.joinable())
+	if (m_captureThread.joinable())
 	{
 		m_stopEvent.setEvent();
-		m_playingThread.join();
+		m_captureThread.join();
 	}
-	if (m_client)
-		m_client->Reset();
-}
-
-void WSAPICapture::playAudio(const uint8_t* pcm, int nLen)
-{
-    std::unique_lock<std::mutex> lock(m_bufferMutex);
-    int usableSize = m_pRingBuffer->usableSize();
-    if (nLen > usableSize)
-        m_pRingBuffer->read(nullptr, nLen - usableSize);
-    m_pRingBuffer->write((const char*)pcm, nLen);
+    m_client = nullptr;
 }
 
 void WSAPICapture::SetVolume(float fVolume)
@@ -262,19 +233,23 @@ float WSAPICapture::Volume() const
     return m_volFloat;
 }
 
-void WSAPICapture::playThread()
+void WSAPICapture::captureThread()
 {
-    HANDLE wait_array[] = { m_stopEvent, m_readyPlayEvent };
+    QmComInit();
+
+    /* Output devices don't signal, so just make it check every 10 ms */
+    DWORD        dur = m_bInputDevice ? 3000 : 100;
+    HANDLE wait_array[] = { m_stopEvent, m_captureReadyEvent };
     for (;;)
     {
-        DWORD wait_result = WaitForMultipleObjects(sizeof(wait_array)/sizeof(HANDLE), wait_array, FALSE,INFINITE);
+        DWORD wait_result = WaitForMultipleObjects(sizeof(wait_array)/sizeof(HANDLE), wait_array, FALSE, dur);
         if (wait_result == WAIT_OBJECT_0 + 0)
         {
             break;
         }
-        else if (wait_result == WAIT_OBJECT_0 + 1)
+        else if (wait_result == WAIT_OBJECT_0 + 1 || wait_result == WAIT_TIMEOUT)
         {
-            fillPcmData();
+            captureData();
         }
         else
         {
@@ -283,39 +258,29 @@ void WSAPICapture::playThread()
     }
 }
 
-void WSAPICapture::fillPcmData()
+void WSAPICapture::captureData()
 {
-    HRESULT hr = S_FALSE;
-    UINT32 num_queued_frames = 0;
-    size_t num_available_frames = 0;
+    UINT    captureSize = 0;
+    for(;;)
+    {
+        res = m_capture->GetNextPacketSize(&captureSize);
+        if (FAILED(res)) {
+            break;
+        }
+        if (!captureSize)
+            break;
 
-    hr = m_client->GetCurrentPadding(&num_queued_frames);
-    num_available_frames = m_bufferFrameCount - num_queued_frames;
-
-    if (num_available_frames < packet_size_frames_)
-        return;
-
-    uint8_t* audio_data = NULL;
-    const size_t num_packets = num_available_frames / packet_size_frames_;
-    for (size_t n = 0; n < num_packets; ++n) {
-        hr = m_render->GetBuffer(packet_size_frames_, &audio_data);
-        if (FAILED(hr)) {
-            return;
+        HRESULT res;
+        LPBYTE  buffer;
+        UINT32  frames;
+        DWORD   flags;
+        UINT64  pos, ts;
+        res = m_capture->GetBuffer(&buffer, &frames, &flags, &pos, &ts);
+        if (FAILED(res)) {
+            break;
         }
 
-        DWORD flags = AUDCLNT_BUFFERFLAGS_SILENT;
-        {
-            std::unique_lock<std::mutex> lock(m_bufferMutex);
-            if (m_pRingBuffer->size() > packet_size_bytes_)
-            {
-                m_pRingBuffer->read((char*)audio_data, packet_size_bytes_);
-                flags = 0;
-            }
-			else
-			{
-				flags = flags;
-			}
-        }
-        m_render->ReleaseBuffer(packet_size_frames_, flags);
-    }
+        //callback.  TODO
+
+        m_capture->ReleaseBuffer(frames);
 }

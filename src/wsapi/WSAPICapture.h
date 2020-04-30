@@ -19,22 +19,22 @@ public:
     WSAPICapture();
     ~WSAPICapture();
 
-    bool init(const wchar_t* deviceID, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
+    bool init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
     bool start();
     void stop();
 
     void SetVolume(float fVolume);
     float Volume() const;
 protected:
-    HRESULT InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *enumerator);
+    HRESULT InitDevice(const wchar_t* deviceID, bool isInputDevice, IMMDeviceEnumerator *enumerator);
     HRESULT InitClient(const QsAudioPara* para, QsAudioPara* pClosestMatch = nullptr);
 
-    void playThread();
-    void fillPcmData();
-    bool FillRenderEndpointBufferWithSilence(IAudioClient* client, IAudioCaptureClient* render_client);
+    void captureThread();
+    void captureData();
 protected:
     ComPtr<IMMDevice>           m_device;
     ComPtr<IAudioClient>        m_client;
+    ComPtr<IAudioClient>        m_audio_render_client_for_loopback;
     ComPtr<IAudioCaptureClient>  m_capture;
     // IAudioEndpointVolume (设备音量)  
     // ISimpleAudioVolume 主音量?
@@ -48,9 +48,8 @@ protected:
     uint32_t packet_size_bytes_ = 0;
 
     QcEvent m_stopEvent;
-    QcEvent m_readyPlayEvent;
-    std::thread m_playingThread;
+    QcEvent m_captureReadyEvent;
+    std::thread m_captureThread;
 
-    std::mutex m_bufferMutex;
-    std::unique_ptr<QcRingBuffer> m_pRingBuffer;
+    bool m_bInputDevice = false;
 };

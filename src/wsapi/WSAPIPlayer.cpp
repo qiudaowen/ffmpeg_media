@@ -258,6 +258,8 @@ bool WSAPIPlayer::start()
     if (!m_render)
         return false;
 
+    // Ensure that the endpoint buffer is prepared with silence.
+    // see audio_low_latency_output_win.cc  WASAPIAudioOutputStream::Start
     FillRenderEndpointBufferWithSilence(m_client, m_render);
     m_stopEvent.resetEvent();
 	m_readyPlayEvent.resetEvent();
@@ -278,8 +280,7 @@ void WSAPIPlayer::stop()
 		m_stopEvent.setEvent();
 		m_playingThread.join();
 	}
-	if (m_client)
-		m_client->Reset();
+    m_client = nullptr;
 }
 
 void WSAPIPlayer::playAudio(const uint8_t* pcm, int nLen)

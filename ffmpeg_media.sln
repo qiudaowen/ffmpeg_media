@@ -11,6 +11,29 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "utils", "src\utils\utils.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wsapi", "src\wsapi\wsapi.vcxproj", "{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{F2535465-FAB6-48B4-A78D-A4540886AD56}"
+	ProjectSection(SolutionItems) = preProject
+		src\include\ComPtr.hpp = src\include\ComPtr.hpp
+		src\include\CoTaskMemPtr.hpp = src\include\CoTaskMemPtr.hpp
+		src\include\IRef.h = src\include\IRef.h
+		src\include\QcAny.h = src\include\QcAny.h
+		src\include\QcAtomicPointer.h = src\include\QcAtomicPointer.h
+		src\include\QcBuffer.h = src\include\QcBuffer.h
+		src\include\QcComInit.h = src\include\QcComInit.h
+		src\include\QcCriticalLock.h = src\include\QcCriticalLock.h
+		src\include\QcEvent.h = src\include\QcEvent.h
+		src\include\QcMutex.h = src\include\QcMutex.h
+		src\include\QcRef.h = src\include\QcRef.h
+		src\include\QcRefHolder.h = src\include\QcRefHolder.h
+		src\include\QcRingBuffer.h = src\include\QcRingBuffer.h
+		src\include\QcSharedMemory.h = src\include\QcSharedMemory.h
+		src\include\QmMacro.h = src\include\QmMacro.h
+		src\include\QsAudiodef.h = src\include\QsAudiodef.h
+		src\include\QsBitSet.h = src\include\QsBitSet.h
+		src\include\QsVideodef.h = src\include\QsVideodef.h
+		src\include\WinHandle.hpp = src\include\WinHandle.hpp
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
