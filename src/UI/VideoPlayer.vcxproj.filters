@@ -30,10 +30,13 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="VideoPlayerMode.h">
+    <ClInclude Include="QcDIBSection.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="QcDIBSection.h">
+    <ClInclude Include="win\MsgWnd.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoPlayerModel.h">
       <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +50,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="VideoPlayerMode.cpp">
+    <ClCompile Include="win\MsgWnd.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoPlayerModel.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
