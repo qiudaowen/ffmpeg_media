@@ -23,6 +23,7 @@ public:
 	void trigger();
 	void setVolume(double fPos);
 	void setProgress(double fPos);
+	double getProgress();
 
 	void addVideoFileList(const std::vector<std::wstring>& fileList);
 	void removeVideoFileList(const std::vector<std::wstring>& fileList);

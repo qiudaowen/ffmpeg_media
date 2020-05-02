@@ -114,3 +114,13 @@ void AVFrameRef::setPtsSystemTime(int sysPts)
 	m_ptsSystemTime = sysPts;
 }
 
+int AVFrameRef::ptsMsTime()
+{
+	return m_msPts;
+}
+
+void AVFrameRef::setPtsMsTime(int msTime)
+{
+	m_msPts = msTime;
+}
+

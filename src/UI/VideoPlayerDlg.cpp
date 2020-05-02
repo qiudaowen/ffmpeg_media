@@ -15,6 +15,7 @@
 #define new DEBUG_NEW
 #endif
 
+#define QmPlayTimerID (1)
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -72,10 +73,10 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_SIZE()
+	ON_WM_HSCROLL()
+	ON_WM_TIMER()
 	
 	ON_BN_CLICKED(IDC_PLAY_PAUSE, &CVideoPlayerDlg::OnBnClickedButtonPlay)
-	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_VIDEO, &CVideoPlayerDlg::OnNMCustomdrawSliderVideo)
-	ON_NOTIFY(NM_CUSTOMDRAW, IDC_SLIDER_VOLUME, &CVideoPlayerDlg::OnNMCustomdrawSliderVolume)
 
 	ON_LBN_SELCHANGE(IDC_LIST_VIDEO, &CVideoPlayerDlg::OnLbnSelchangeListVideo)
 	ON_BN_CLICKED(IDC_ADD_VIDEOFILE, &CVideoPlayerDlg::OnBnClickedButtonAdd)
@@ -123,14 +124,16 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 		UpdateWindow();
 	});
 
-	m_videoProgressSlider.SetRange(0, 100, TRUE);
-	m_volSliderCtrl.SetRange(0, 100, TRUE);
+	m_videoProgressSlider.SetRange(0, 10000, TRUE);
+	m_volSliderCtrl.SetRange(0, 10000, TRUE);
 	
 
 	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
 	m_playerModel = std::make_unique<VideoPlayerModel>();
 	m_playerModel->init(pWnd->GetSafeHwnd());
 	m_playerModel->open(L"D:\\wow1080p60fps.mp4");
+
+	SetTimer(QmPlayTimerID, 500, NULL);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -227,26 +230,6 @@ void CVideoPlayerDlg::OnBnClickedButtonPlay()
 	m_playerModel->trigger();
 }
 
-void CVideoPlayerDlg::OnNMCustomdrawSliderVideo(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
-	if (pNMCD->dwDrawStage == CDDS_PREPAINT)
-	{
-		int nPos = m_videoProgressSlider.GetPos();
-		// update static control here
-	}
-	*pResult = 0;
-}
-
-
-void CVideoPlayerDlg::OnNMCustomdrawSliderVolume(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	LPNMCUSTOMDRAW pNMCD = reinterpret_cast<LPNMCUSTOMDRAW>(pNMHDR);
-	// TODO: 在此添加控件通知处理程序代码
-	*pResult = 0;
-}
-
-
 void CVideoPlayerDlg::OnLbnSelchangeListVideo()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -257,6 +240,38 @@ void CVideoPlayerDlg::OnBnClickedButtonShowList()
 {
 	m_videoFileList.ShowWindow(m_videoFileList.IsWindowVisible() ? SW_HIDE : SW_SHOW);
 	adjustControlPos();
+}
+
+void CVideoPlayerDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	CSliderCtrl* pSlider = (CSliderCtrl*)pScrollBar;
+	double fPos = pSlider->GetPos() / (double)pSlider->GetRangeMax();
+
+	switch (pSlider->GetDlgCtrlID())
+	{
+	case IDC_SLIDER_VIDEO:
+	{
+		if (m_playerModel)
+			m_playerModel->setProgress(fPos);
+		break;
+	}
+	case IDC_SLIDER_VOLUME:
+	{
+		if (m_playerModel)
+			m_playerModel->setVolume(fPos);
+		break;
+	}
+	}
+}
+
+void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (m_playerModel)
+	{
+		double fPos = m_playerModel->getProgress();
+		m_videoProgressSlider.SetPos(fPos * m_videoProgressSlider.GetRangeMax());
+	}
+	CDialog::OnTimer(nIDEvent);
 }
 
 CRect CVideoPlayerDlg::getDlgItemRect(int id)

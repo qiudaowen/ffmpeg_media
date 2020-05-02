@@ -38,7 +38,7 @@ public:
 	const QsMediaInfo* getMediaInfo() const;
     bool hasVideo() const {return m_pVideoDecoder != nullptr;}
     bool hasAudio() const  {return m_pAudioDecoder != nullptr; }
-	int getCurTime() const { return m_iVideoCurTime > m_iAudioCurTime ? m_iVideoCurTime : m_iAudioCurTime; }
+	int getCurTime() const;
 	int getTotalTime() const;
 protected:
     void _start();

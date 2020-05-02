@@ -92,18 +92,28 @@ bool QcMultiMediaPlayerPrivate::readFrame(bool bVideo, AVFrameRef& frame)
 
 	if (bVideo)
 	{
-		std::lock_guard<std::mutex> QmUniqueVarName(m_videoQueue.mutex());
-		//QmStdMutexLocker(m_videoQueue.mutex());
-		return m_videoQueue.pop(frame);
+		QmStdMutexLocker(m_videoQueue.mutex());
+		bool bRet = m_videoQueue.pop(frame);
+		if (bRet)
+			m_iVideoCurTime = frame.ptsMsTime();
+		return bRet;
 	}
 		
 	QmStdMutexLocker(m_audioQueue.mutex());
-	return m_audioQueue.pop(frame);
+	bool bRet = m_audioQueue.pop(frame);
+	if (bRet)
+		m_iAudioCurTime = frame.ptsMsTime();
+	return bRet;
 }
 
 const QsMediaInfo* QcMultiMediaPlayerPrivate::getMediaInfo() const
 {
 	return m_pDemuxer ? &(m_pDemuxer->getMediaInfo()) : NULL;
+}
+
+int QcMultiMediaPlayerPrivate::getCurTime() const 
+{ 
+	return m_iVideoCurTime > m_iAudioCurTime ? m_iVideoCurTime : m_iAudioCurTime; 
 }
 
 int QcMultiMediaPlayerPrivate::getTotalTime() const
@@ -144,6 +154,9 @@ void QcMultiMediaPlayerPrivate::seek(int msTime)
 		_synState(ePause);
 
 	m_pDemuxer->seek(msTime);
+	m_videoPacketQueue.clear();
+	m_audioPacketQueue.clear();
+
 	m_pVideoDecoder->flush();
 	m_pAudioDecoder->flush();
 	m_videoQueue.clear();
@@ -309,6 +322,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 						if (m_pNotify->OnVideoFrame(frame))
 						{
 							--iVideoQueueSize;
+							m_iVideoCurTime = frame.ptsMsTime();
 							m_videoQueue.pop(frame);
 						}
 					}
@@ -329,6 +343,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->videoStream());
 							int mediaTime = playSysTime - m_iBeginSystemTime;
 							frame.setPtsSystemTime(playSysTime);
+							frame.setPtsMsTime(mediaTime);
 
 							QmStdMutexLocker(m_videoQueue.mutex());
 							m_videoQueue.push(frame);
@@ -389,6 +404,7 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 						if (m_pNotify->OnAudioFrame(frame))
 						{
 							--iQueueSize;
+							m_iAudioCurTime = frame.ptsMsTime();
 							m_audioQueue.pop(frame);
 						}
 					}
@@ -409,6 +425,7 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->audioStream());
 							int mediaTime = playSysTime - m_iBeginSystemTime;
 							frame.setPtsSystemTime(playSysTime);
+							frame.setPtsMsTime(mediaTime);
 
 							QmStdMutexLocker(m_audioQueue.mutex());
 							m_audioQueue.push(frame);

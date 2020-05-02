@@ -57,7 +57,7 @@ bool VideoPlayerModel::open(const std::wstring& fileName)
 
 	m_player->play();
 
-	m_player->seek(mediaInfo.iFileTotalTime * 0.5);
+	//m_player->seek(mediaInfo.iFileTotalTime * 0.5);
 	return true;
 }
 
@@ -83,6 +83,11 @@ void VideoPlayerModel::setVolume(double fPos)
 void VideoPlayerModel::setProgress(double fPos)
 {
 	m_player->seek(m_player->getTotalTime() * fPos);
+}
+
+double VideoPlayerModel::getProgress()
+{
+	return m_player->getCurTime() / (double)m_player->getTotalTime();
 }
 
 void VideoPlayerModel::addVideoFileList(const std::vector<std::wstring>& fileList)

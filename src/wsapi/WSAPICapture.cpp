@@ -88,7 +88,7 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
         WAVEFORMATEXPtr audioFormat((WAVEFORMATEX*)CoTaskMemAlloc(sizeof(WAVEFORMATEX)), coTaskMemFree);
         WASPI_utils::toWAVEFORMATPCMEX(*para, audioFormat.get());
 
-        tryFormatList.emplace_back(audioFormat);
+        tryFormatList.emplace_back(std::move(audioFormat));
     }
     if (pClosestPara)
     {
@@ -261,26 +261,26 @@ void WSAPICapture::captureThread()
 void WSAPICapture::captureData()
 {
     UINT    captureSize = 0;
-    for(;;)
-    {
-        res = m_capture->GetNextPacketSize(&captureSize);
-        if (FAILED(res)) {
-            break;
-        }
-        if (!captureSize)
-            break;
+	for (;;)
+	{
+		HRESULT res = m_capture->GetNextPacketSize(&captureSize);
+		if (FAILED(res)) {
+			break;
+		}
+		if (!captureSize)
+			break;
 
-        HRESULT res;
-        LPBYTE  buffer;
-        UINT32  frames;
-        DWORD   flags;
-        UINT64  pos, ts;
-        res = m_capture->GetBuffer(&buffer, &frames, &flags, &pos, &ts);
-        if (FAILED(res)) {
-            break;
-        }
+		LPBYTE  buffer;
+		UINT32  frames;
+		DWORD   flags;
+		UINT64  pos, ts;
+		res = m_capture->GetBuffer(&buffer, &frames, &flags, &pos, &ts);
+		if (FAILED(res)) {
+			break;
+		}
 
-        //callback.  TODO
+		//callback.  TODO
 
-        m_capture->ReleaseBuffer(frames);
+		m_capture->ReleaseBuffer(frames);
+	}
 }

@@ -36,7 +36,11 @@ public:
 
 	int ptsSystemTime() const;
 	void setPtsSystemTime(int sysPts);
+
+	int ptsMsTime();
+	void setPtsMsTime(int msTime);
 private:
     std::shared_ptr<AVFrame> m_pAVFrame = nullptr;
 	int m_ptsSystemTime = 0;
+	int m_msPts = 0;
 };

@@ -40,10 +40,10 @@ protected:
 public:
 	afx_msg void OnBnClickedButtonAdd();
 	afx_msg void OnBnClickedButtonPlay();
-	afx_msg void OnNMCustomdrawSliderVideo(NMHDR *pNMHDR, LRESULT *pResult);
-	afx_msg void OnNMCustomdrawSliderVolume(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnLbnSelchangeListVideo();
 	afx_msg void OnBnClickedButtonShowList();
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 protected:
 	std::unique_ptr<VideoPlayerModel> m_playerModel;
