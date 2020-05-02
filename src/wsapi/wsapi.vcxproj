@@ -19,18 +19,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="libstring.cpp" />
+    <ClCompile Include="WASPI_utils.cpp" />
+    <ClCompile Include="WSAPICapture.cpp" />
+    <ClCompile Include="WSAPIPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="libstring.h" />
-    <ClInclude Include="libversion.h" />
-    <ClInclude Include="libweakBinder.h" />
+    <ClInclude Include="WASPI_utils.h" />
+    <ClInclude Include="WSAPICapture.h" />
+    <ClInclude Include="WSAPIPlayer.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7AB10D06-7299-47FB-A987-BA7808DACEC3}</ProjectGuid>
+    <ProjectGuid>{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Utils</RootNamespace>
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <RootNamespace>wsapi</RootNamespace>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)src\props\conf.props" />
   <Import Project="$(SolutionDir)src\props\common.props" />

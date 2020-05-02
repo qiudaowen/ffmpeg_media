@@ -4,12 +4,15 @@
 struct QcComInit
 {
 	QcComInit(int flag = COINIT_MULTITHREADED)
+        : m_bInitialized(SUCCEEDED(CoInitializeEx(NULL, flag)))
 	{
-		CoInitializeEx(NULL, flag);
 	}
 	~QcComInit()
 	{
-		CoUninitialize();
+        if (m_bInitialized)
+		    CoUninitialize();
 	}
+protected:
+    const bool m_bInitialized;
 };
 #define QmComInit() QcComInit QmUniqueVarName;

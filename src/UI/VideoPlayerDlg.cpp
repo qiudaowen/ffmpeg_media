@@ -148,10 +148,6 @@ void CVideoPlayerDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-// 如果向对话框添加最小化按钮，则需要下面的代码
-//  来绘制该图标。  对于使用文档/视图模型的 MFC 应用程序，
-//  这将由框架自动完成。
-
 void CVideoPlayerDlg::OnPaint()
 {
 	if (IsIconic())
@@ -184,8 +180,6 @@ void CVideoPlayerDlg::OnSize(UINT nType, int cx, int cy)
 		adjustControlPos();
 }
 
-//当用户拖动最小化窗口时系统调用此函数取得光标
-//显示。
 HCURSOR CVideoPlayerDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
