@@ -13,10 +13,14 @@ public:
 	static AVFrameRef allocFrame();
 	static AVFrameRef allocFrame(int w, int h, int format, int pts = 0);
     static AVFrameRef allocAudioFrame(int nb_samples, int nChannel, int format, int pts = 0);
+	static AVFrameRef fromHWFrame(const AVFrameRef& hwFrame);
 
     operator AVFrame* () {
         return m_pAVFrame.get();
     }
+	operator const AVFrame* () const {
+		return m_pAVFrame.get();
+	}
     AVFrame* operator->() {
         return m_pAVFrame.get();
     }
@@ -29,6 +33,7 @@ public:
 	int width() const;
 	int height() const;
 	int format() const;
+	bool isHWFormat() const;
 
 	int sampleCount() const;
 	uint64_t channelLayout() const;

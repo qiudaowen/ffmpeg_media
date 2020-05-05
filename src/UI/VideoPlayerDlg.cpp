@@ -56,6 +56,8 @@ END_MESSAGE_MAP()
 
 CVideoPlayerDlg::CVideoPlayerDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_VIDEOPLAYER_DIALOG, pParent)
+	, m_curTime(_T(""))
+	, m_totalTime(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -66,6 +68,8 @@ void CVideoPlayerDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_VIDEO, m_videoFileList);
 	DDX_Control(pDX, IDC_SLIDER_VIDEO, m_videoProgressSlider);
 	DDX_Control(pDX, IDC_SLIDER_VOLUME, m_volSliderCtrl);
+	DDX_Text(pDX, IDC_PLAYTIME, m_curTime);
+	DDX_Text(pDX, IDC_TOTALTIME, m_totalTime);
 }
 
 BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
@@ -129,9 +133,9 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	
 
 	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
-	m_playerModel = std::make_unique<VideoPlayerModel>();
+	m_playerModel = std::make_shared<VideoPlayerModel>();
 	m_playerModel->init(pWnd->GetSafeHwnd());
-	m_playerModel->open(L"D:\\wow1080p60fps.mp4");
+	//m_playerModel->open(L"D:\\wow1080p60fps.mp4");
 
 	SetTimer(QmPlayTimerID, 500, NULL);
 
@@ -213,7 +217,7 @@ static std::vector<CString> getOpenFileList(const wchar_t* szFilterList, CWnd* p
 
 void CVideoPlayerDlg::OnBnClickedButtonAdd()
 {
-	TCHAR szFilter[] = _T("视频文件(*.FLV,*.mp4,*.avi,*.wmv,*.mkv)|*.FLV,*.mp4,*.avi,*.wmv,*.mkv|所有文件(*.*)|*.*||");
+	TCHAR szFilter[] = _T("视频文件(*.FLV,*.mp4,*.avi,*.wmv,*.mkv)|*.FLV;*.mp4;*.avi;*.wmv;*.mkv|所有文件(*.*)|*.*||");
 	std::vector<CString> fileList = getOpenFileList(szFilter, this);
 	std::vector<std::wstring> wfileList;
 	for (const auto& item : fileList)
@@ -270,6 +274,14 @@ void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		double fPos = m_playerModel->getProgress();
 		m_videoProgressSlider.SetPos(fPos * m_videoProgressSlider.GetRangeMax());
+
+		int curTime = m_playerModel->getCurTime();
+		int totalTime = m_playerModel->getTotalTime();
+
+
+		m_curTime = CTimeSpan(curTime / 1000).Format("%H:%M:%S");
+		m_totalTime = CTimeSpan(totalTime / 1000).Format("%H:%M:%S");
+		UpdateData(FALSE);
 	}
 	CDialog::OnTimer(nIDEvent);
 }

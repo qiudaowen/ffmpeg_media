@@ -7,28 +7,6 @@ extern "C"{
 #include <libswscale/swscale.h>
 }
 
-
-static AVCodec *find_hardware_decoder(enum AVCodecID id)
-{
-	AVHWAccel *hwa = av_hwaccel_next(NULL);
-	AVCodec *c = NULL;
-
-	while (hwa) {
-		if (hwa->id == id) {
-			if (hwa->pix_fmt == AV_PIX_FMT_DXVA2_VLD ||
-				hwa->pix_fmt == AV_PIX_FMT_VAAPI_VLD) {
-				c = avcodec_find_decoder_by_name(hwa->name);
-				if (c)
-					break;
-			}
-		}
-
-		hwa = av_hwaccel_next(hwa);
-	}
-
-	return c;
-}
-
 FFmpegVideoDecoder::FFmpegVideoDecoder(const AVCodecParameters *par, bool hw)
 {
     Open(par, hw);
@@ -54,22 +32,14 @@ void FFmpegVideoDecoder::Open(const AVCodecParameters *par, bool hw)
     {
         Close();
 
-        if (hw)
-        {
-            AVCodec* pCodec = find_hardware_decoder(par ? par->codec_id : (AVCodecID)m_codeID);
-            if (pCodec)
-                OpenCodec(par, pCodec);
-        }
-        if (m_pCodec == 0)
-        {
-            AVCodec* pCodec = avcodec_find_decoder(par ? par->codec_id : (AVCodecID)m_codeID);
-            if (pCodec)
-                OpenCodec(par, pCodec);
-        }
+
+       AVCodec* pCodec = avcodec_find_decoder(par ? par->codec_id : (AVCodecID)m_codeID);
+       if (pCodec)
+           OpenCodec(par, pCodec, hw);
     } while (0);
 }
 
-void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec)
+void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec, bool hw)
 {
     AVCodecContext* pCodecCtx = nullptr;
     do 
@@ -78,6 +48,7 @@ void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec
         if (pCodecCtx == NULL)
             break;
 
+		auto old_get_format = pCodecCtx->get_format;
         if (par != nullptr)
         {
             avcodec_parameters_to_context(pCodecCtx, par);
@@ -94,10 +65,47 @@ void FFmpegVideoDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec
             pCodecCtx->coded_height = m_srcH;
             pCodecCtx->pix_fmt = (AVPixelFormat)m_srcFormat;
         }
-		if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+
+		bool bDone = false;
+		int err = 0;
+		if (hw)
 		{
-			avcodec_free_context(&pCodecCtx);
-			break;
+			do 
+			{
+				err = av_hwdevice_ctx_create(&m_hw_device_ctx, AV_HWDEVICE_TYPE_D3D11VA, NULL, NULL, 0);
+				if (err < 0) {
+					break;
+				}
+				pCodecCtx->hw_device_ctx = av_buffer_ref(m_hw_device_ctx);
+
+				pCodecCtx->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {
+					const enum AVPixelFormat *p;
+					for (p = pix_fmts; *p != -1; p++) {
+						if (*p == AV_PIX_FMT_D3D11)
+							return *p;
+					}
+					return AV_PIX_FMT_NONE;
+				};
+
+				err = avcodec_open2(pCodecCtx, pCodec, NULL);
+				if (err < 0)
+					break;
+
+				bDone = true;
+			} while (0);
+		}
+
+		if (!bDone)
+		{
+			av_buffer_unref(&m_hw_device_ctx);
+			pCodecCtx->hw_device_ctx = nullptr;
+			pCodecCtx->get_format = old_get_format;
+
+			if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
+			{
+				avcodec_free_context(&pCodecCtx);
+				break;
+			}
 		}
             
         m_pCodec = pCodec;

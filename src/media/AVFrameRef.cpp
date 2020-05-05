@@ -54,6 +54,17 @@ AVFrameRef AVFrameRef::allocAudioFrame(int nb_samples, int nChannel, int format,
     return ret;
 }
 
+AVFrameRef AVFrameRef::fromHWFrame(const AVFrameRef& hwFrame)
+{
+	if (hwFrame.isHWFormat())
+	{
+		AVFrameRef dst = AVFrameRef::allocFrame();
+		av_hwframe_transfer_data(dst, hwFrame, 0);
+		return dst;
+	}
+	return hwFrame;
+}
+
 uint8_t* AVFrameRef::data(int index) const
 {
 	return m_pAVFrame ? m_pAVFrame->data[index] : 0;
@@ -87,6 +98,11 @@ int AVFrameRef::height() const
 int AVFrameRef::format() const
 {
 	return m_pAVFrame ? m_pAVFrame->format : 0;
+}
+
+bool AVFrameRef::isHWFormat() const
+{
+	return m_pAVFrame ? m_pAVFrame->format == AV_PIX_FMT_D3D11 : false;
 }
 
 int AVFrameRef::sampleCount() const

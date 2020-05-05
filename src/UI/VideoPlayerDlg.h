@@ -46,7 +46,7 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 protected:
-	std::unique_ptr<VideoPlayerModel> m_playerModel;
+	std::shared_ptr<VideoPlayerModel> m_playerModel;
 	QcComInit comInit;
 
 	bool m_bInitDialog = false;
@@ -59,4 +59,6 @@ protected:
 public:
 	CSliderCtrl m_videoProgressSlider;
 	CSliderCtrl m_volSliderCtrl;
+	CString m_curTime;
+	CString m_totalTime;
 };

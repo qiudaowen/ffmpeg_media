@@ -43,7 +43,7 @@ bool QcMultiMediaPlayerPrivate::open(const char* pFile)
 		AVStream* pVideoStream = m_pDemuxer->videoStream();
 		if (pVideoStream)
 		{
-			m_pVideoDecoder = std::make_unique<FFmpegVideoDecoder>(pVideoStream->codecpar);
+			m_pVideoDecoder = std::make_unique<FFmpegVideoDecoder>(pVideoStream->codecpar, true);
 		}
 		AVStream* pAudioStream = m_pDemuxer->audioStream();
 		if (pAudioStream)
@@ -138,7 +138,7 @@ void QcMultiMediaPlayerPrivate::pause()
 	if (m_pDemuxer == nullptr)
 		return;
 
-	if (m_playState != ePlaying)
+	if (m_playState != ePause)
 	{
 		_synState(ePause);
 	}

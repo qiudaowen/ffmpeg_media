@@ -4,6 +4,7 @@
 #include "mediaPub.h"
 
 struct AVCodecContext;
+struct AVBufferRef;
 struct AVCodec;
 struct AVCodecParameters;
 struct AVPacket;
@@ -30,10 +31,11 @@ public:
 protected:
     void Close();
     void Open(const AVCodecParameters *par, bool hw);
-    void OpenCodec(const AVCodecParameters *par, AVCodec* pCodec);
+    void OpenCodec(const AVCodecParameters *par, AVCodec* pCodec, bool hw);
 protected:
 	AVCodecContext* m_pCodecCtx = nullptr;
 	AVCodec* m_pCodec = nullptr;
+	AVBufferRef * m_hw_device_ctx = nullptr;
 
     int m_srcW = 0;
     int m_srcH = 0;

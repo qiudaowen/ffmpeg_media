@@ -35,6 +35,9 @@ void VideoPlayerModel::init(HWND hWnd)
 
 bool VideoPlayerModel::open(const std::wstring& fileName)
 {
+	close();
+
+	m_currentPlayFile = fileName;
 	bool bRet = m_player->open(libstring::toUtf8(fileName).c_str());
 	if (!bRet)
 		return false;
@@ -62,9 +65,20 @@ bool VideoPlayerModel::open(const std::wstring& fileName)
 }
 
 
+int VideoPlayerModel::getCurTime() const
+{
+	return m_player ? m_player->getCurTime() : 0;
+}
+
+int VideoPlayerModel::getTotalTime() const
+{
+	return m_player ? m_player->getTotalTime() : 0;
+}
+
 void VideoPlayerModel::close()
 {
-	m_player->close();
+	if (m_player)
+		m_player->close();
 }
 
 void VideoPlayerModel::trigger()
@@ -93,6 +107,8 @@ double VideoPlayerModel::getProgress()
 void VideoPlayerModel::addVideoFileList(const std::vector<std::wstring>& fileList)
 {
 	m_fileList.insert(m_fileList.end(), fileList.begin(), fileList.end());
+	if (m_fileList.size() == fileList.size())
+		openNext();
 }
 
 void VideoPlayerModel::removeVideoFileList(const std::vector<std::wstring>& fileList)
@@ -108,9 +124,26 @@ void VideoPlayerModel::removeVideoFileList(const std::vector<std::wstring>& file
 void VideoPlayerModel::openNext()
 {
     //open();
+	if (m_fileList.size())
+	{
+		for (int i=0; i<(int)m_fileList.size(); ++i)
+		{
+			auto iter = std::find(m_fileList.begin(), m_fileList.end(), m_currentPlayFile);
+			if (iter == m_fileList.end() || ++iter == m_fileList.end())
+			{
+				if (open(m_fileList.front()))
+					break;
+			}
+			else
+			{
+				if (open(*iter))
+					break;
+			}
+		}
+	}
 }
 
-bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
+void VideoPlayerModel::onRender()
 {
 	RECT rc;
 	GetClientRect(m_hWnd, &rc);
@@ -118,12 +151,39 @@ bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
 	int h = rc.bottom - rc.top;
 	m_memorySurface.resize(w, h);
 
-	m_transFormat->transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
-		, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface.format()), m_memorySurface.datas(), m_memorySurface.lineSizes());
+	{
+		QmStdMutexLocker(m_lastFrameMutex);
+		const AVFrameRef& frame = m_lastFrame;
+		m_transFormat->transformat(m_lastFrame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
+			, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface.format()), m_memorySurface.datas(), m_memorySurface.lineSizes());
+
+	}
 
 	HDC hDC = GetDC(m_hWnd);
 	::BitBlt(hDC, 0, 0, w, h, m_memorySurface.dcHandle(), 0, 0, SRCCOPY);
 	ReleaseDC(m_hWnd, hDC);
+}
+
+bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
+{
+	{
+		AVFrameRef memFrame = AVFrameRef::fromHWFrame(frame);
+		QmStdMutexLocker(m_lastFrameMutex);
+		m_lastFrame = memFrame;
+	}
+	if (!m_bUpdating)
+	{
+		m_bUpdating = true;
+		std::weak_ptr<VideoPlayerModel> weakThis = shared_from_this();
+		MsgWnd::mainMsgWnd()->post([weakThis]() {
+			auto pThis = weakThis.lock();
+			if (pThis)
+			{
+				pThis->m_bUpdating = false;
+				pThis->onRender();
+			}	
+		});
+	}
 	return true;
 }
 
