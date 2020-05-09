@@ -1,6 +1,8 @@
 #ifndef QS_AUDIO_PARA_H
 #define QS_AUDIO_PARA_H
 
+#include <stdint.h>
+
 enum QeSampleFormat
 {
 	eSampleFormatNone = -1,
@@ -31,6 +33,19 @@ struct QsAudioPara
 	{
 		return !(*this == para);
 	}
+};
+
+#define QmAudioPlanes 8
+struct QsAudioData
+{
+    int iSamplingFreq;
+    QeSampleFormat eSample_fmt;
+    int nChannel;
+
+    const uint8_t* data[QmAudioPlanes];
+    uint32_t frames;
+
+    uint64_t timestamp;
 };
 inline int getBytesPerSample(QeSampleFormat format)
 {

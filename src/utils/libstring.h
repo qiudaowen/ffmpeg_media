@@ -31,8 +31,8 @@ namespace libstring
 	std::string regex_replace(const std::string& str, const char* search, const char* replace);
 	std::wstring regex_replace(const std::wstring& str, const wchar_t* search, const wchar_t* replace);
 
-	std::vector<std::string> c_split(const char* in, const char* delim);
-	std::vector<std::wstring> c_split(const wchar_t* in, const wchar_t* delim);
+	std::vector<std::string> c_split(const char* in, const char* delim, bool includeEmpty = false);
+	std::vector<std::wstring> c_split(const wchar_t* in, const wchar_t* delim, bool includeEmpty = false);
 
 	std::wstring& trim(std::wstring &s);
 	std::string& trim(std::string &s);

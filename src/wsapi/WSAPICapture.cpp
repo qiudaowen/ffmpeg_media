@@ -26,6 +26,11 @@ WSAPICapture::~WSAPICapture()
     stop();
 }
 
+void WSAPICapture::setCaptureCb(WSAPICaptureCb&& cb)
+{
+    m_audioCb = cb;
+}
+
 bool WSAPICapture::init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para, QsAudioPara* pClosestMatch)
 {
     stop();
@@ -119,6 +124,8 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
             tryFormatList.emplace_back(WAVEFORMATEXPtr((WAVEFORMATEX*)audioFormat, coTaskMemFree));
         }
     }
+    if (tryFormatList.empty())
+        return AUDCLNT_E_UNSUPPORTED_FORMAT;
     
     
     for (const auto& audioFormat : tryFormatList)
@@ -144,10 +151,6 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
         res = pClient->Initialize(AUDCLNT_SHAREMODE_SHARED, stream_flags, 0, 0, pUseFormat, 0);
         if (FAILED(res))
             continue;
-
-        res = pClient->GetBufferSize(&m_bufferFrameCount);
-        if (FAILED(res))
-            break;
 
         res = pClient->GetService(__uuidof(IAudioRenderClient),(void**)&m_capture);
         if (FAILED(res))
@@ -175,8 +178,7 @@ HRESULT WSAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
                 continue;
             }
         }
-        packet_size_frames_ = pUseFormat->nSamplesPerSec / 100;
-        packet_size_bytes_ = pUseFormat->nBlockAlign * packet_size_frames_;
+        m_audioPara = pClosestPara ? *pClosestPara : *para;
         break;
     };
 
@@ -280,7 +282,20 @@ void WSAPICapture::captureData()
 		}
 
 		//callback.  TODO
+        if (m_audioCb)
+        {
+            QsAudioData data;
+            data.iSamplingFreq = m_audioPara.iSamplingFreq;
+            data.eSample_fmt = m_audioPara.eSample_fmt;
+            data.nChannel = m_audioPara.nChannel;
 
+            data.data[0] = (const uint8_t *)buffer;
+            data.frames = (uint32_t)frames;
+
+            data.timestamp = GetTickCount();
+
+            m_audioCb(&data);
+        }
 		m_capture->ReleaseBuffer(frames);
 	}
 }

@@ -148,19 +148,41 @@ namespace libstring
         return std::regex_replace(str, std::wregex(search), replace);
     }
 
-    std::vector<std::string> c_split(const char* in, const char* delim) {
-        std::regex re{ delim };
-        return std::vector<std::string> {
-            std::cregex_token_iterator(in, in + strlen(in), re, -1),
-                std::cregex_token_iterator()
-        };
+    std::vector<std::string> c_split(const char* in, const char* delim, bool includeEmpty) {
+        std::vector<std::string> retList;
+
+        const char* begin = in;
+        const char *end = strstr(begin, delim);
+        int nLenDelim = (int)strlen(delim);
+        while (end != nullptr)
+        {
+            size_t nLen = end - begin;
+            if (nLen || includeEmpty)
+                retList.emplace_back(std::string(begin, nLen));
+            begin = end + nLenDelim;
+            end = strstr(begin, delim);
+        }
+        if (includeEmpty || strlen(begin))
+            retList.emplace_back(std::string(begin));
+        return retList;
     }
-    std::vector<std::wstring> c_split(const wchar_t* in, const wchar_t* delim) {
-        std::wregex re{ delim };
-        return std::vector<std::wstring> {
-            std::wcregex_token_iterator(in, in + wcslen(in), re, -1),
-                std::wcregex_token_iterator()
-        };
+    std::vector<std::wstring> c_split(const wchar_t* in, const wchar_t* delim, bool includeEmpty) {
+        std::vector<std::wstring> retList;
+
+        const wchar_t* begin = in;
+        const wchar_t *end = wcsstr(begin, delim);
+        int nLenDelim = (int)wcslen(delim);
+        while (end != nullptr)
+        {
+            size_t nLen = end - begin;
+            if (nLen || includeEmpty)
+                retList.emplace_back(std::wstring(begin, nLen));
+            begin = end + nLenDelim;
+            end = wcsstr(begin, delim);
+        }
+        if (includeEmpty || wcslen(begin))
+            retList.emplace_back(std::wstring(begin));
+        return retList;
     }
 
 	std::wstring& trim(std::wstring &s) {
