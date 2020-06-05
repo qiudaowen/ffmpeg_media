@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mediaPub.h"
+#include "media_global.h"
 
 class QcMultiMediaPlayerPrivate;
 class AVFrameRef;

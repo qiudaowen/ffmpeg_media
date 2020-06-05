@@ -13,13 +13,13 @@ struct IAudioStreamVolume;
 struct QsAudioPara;
 class QcRingBuffer;
 
-class WSAPIPlayer
+class WASAPIPlayer
 {
 public:
-    WSAPIPlayer();
-    ~WSAPIPlayer();
+    WASAPIPlayer();
+    ~WASAPIPlayer();
 
-    bool init(const wchar_t* deviceID, const QsAudioPara& para, QsAudioPara* pClosestMatch = nullptr);
+    bool init(const wchar_t* deviceID, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
     bool start();
     void stop();
 
@@ -28,7 +28,8 @@ public:
     float Volume() const;
 protected:
     HRESULT InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *enumerator);
-    HRESULT InitClient(const QsAudioPara& para, QsAudioPara* pClosestMatch = nullptr);
+    HRESULT InitClient(const QsAudioPara* para, QsAudioPara* pClosestMatch = nullptr);
+    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioPara* pClosestPara);
 
     void playThread();
     void fillPcmData();

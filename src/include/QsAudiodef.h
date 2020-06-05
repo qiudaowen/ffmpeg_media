@@ -20,14 +20,14 @@ enum QeSampleFormat
 };
 struct QsAudioPara
 {
-	int iSamplingFreq = 0;
-	QeSampleFormat eSample_fmt = eSampleFormatNone;
-	int nChannel = 0;
+	int sampleRate = 0;
+	QeSampleFormat sampleFormat = eSampleFormatNone;
+	int nChannels = 0;
 	bool operator==(const QsAudioPara& para) const
 	{
-		return iSamplingFreq == para.iSamplingFreq
-			&& eSample_fmt == para.eSample_fmt
-			&& nChannel == para.nChannel;
+		return sampleRate == para.sampleRate
+			&& sampleFormat == para.sampleFormat
+			&& nChannels == para.nChannels;
 	}
 	bool operator!=(const QsAudioPara& para) const
 	{
@@ -38,9 +38,9 @@ struct QsAudioPara
 #define QmAudioPlanes 8
 struct QsAudioData
 {
-    int iSamplingFreq;
-    QeSampleFormat eSample_fmt;
-    int nChannel;
+    int sampleRate;
+    QeSampleFormat sampleFormat;
+    int nChannels;
 
     const uint8_t* data[QmAudioPlanes];
     uint32_t frames;
@@ -71,7 +71,7 @@ inline int getBytesPerSample(QeSampleFormat format)
 }
 inline int getAudioBufferSize(const QsAudioPara& para, int nb_samples)
 {
-	return getBytesPerSample(para.eSample_fmt) * para.nChannel * nb_samples;
+	return getBytesPerSample(para.sampleFormat) * para.nChannels * nb_samples;
 }
 inline QeSampleFormat toNonPlanarFormat(QeSampleFormat format)
 {

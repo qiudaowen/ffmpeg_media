@@ -1,11 +1,11 @@
 #include "QcAudioPlayer.h"
-#include "WSAPIPlayer.h"
+#include "wasapi/WASAPIPlayer.h"
 
 struct QcAudioPlayerPrivate
 {
     bool m_isOpen = false;
     QsAudioPara m_openParas;
-    std::unique_ptr<WSAPIPlayer> m_player;
+    std::unique_ptr<WASAPIPlayer> m_player;
 };
 
 QcAudioPlayer::QcAudioPlayer()
@@ -19,14 +19,14 @@ QcAudioPlayer::~QcAudioPlayer()
     close();
 }
 
-bool QcAudioPlayer::open(const wchar_t* deviceID, const QsAudioPara& para, QsAudioPara* pClosestMatch)
+bool QcAudioPlayer::open(const wchar_t* deviceID, const QsAudioPara* para, QsAudioPara* pClosestMatch)
 {
 	close();
-    m_ptr->m_player.reset(new WSAPIPlayer());
+    m_ptr->m_player.reset(new WASAPIPlayer());
     m_ptr->m_isOpen = m_ptr->m_player->init(deviceID, para, pClosestMatch);
 	if (m_ptr->m_isOpen)
 	{
-        m_ptr->m_openParas = pClosestMatch ? *pClosestMatch : para;
+        m_ptr->m_openParas = pClosestMatch ? *pClosestMatch : *para;
 	}
 	else
 	{

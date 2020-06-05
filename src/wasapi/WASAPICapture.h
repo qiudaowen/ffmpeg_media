@@ -18,11 +18,11 @@ class QcRingBuffer;
 
 using WSAPICaptureCb = std::function<void(const QsAudioData*)>;
 
-class WSAPICapture
+class WASAPICapture
 {
 public:
-    WSAPICapture();
-    ~WSAPICapture();
+    WASAPICapture();
+    ~WASAPICapture();
 
     void setCaptureCb(WSAPICaptureCb&& cb);
     bool init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
@@ -34,6 +34,7 @@ public:
 protected:
     HRESULT InitDevice(const wchar_t* deviceID, bool isInputDevice, IMMDeviceEnumerator *enumerator);
     HRESULT InitClient(const QsAudioPara* para, QsAudioPara* pClosestMatch = nullptr);
+    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioPara* pClosestPara);
 
     void captureThread();
     void captureData();

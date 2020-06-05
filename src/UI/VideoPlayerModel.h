@@ -48,7 +48,7 @@ protected:
 	std::unique_ptr<QcMultiMediaPlayer> m_player;
 	std::unique_ptr<FFmpegVideoTransformat> m_transFormat;
 	std::unique_ptr<QcAudioPlayer> m_audioPlayer;
-	std::unique_ptr<QcAudioTransformat> m_audioTrans;
+	std::unique_ptr<QcAudioTransformat> m_audioTransForPlayer;
 
 	std::vector<std::wstring> m_fileList;
 	std::wstring m_currentPlayFile;

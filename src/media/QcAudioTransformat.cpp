@@ -36,13 +36,13 @@ void QcAudioTransformat::CloseSwrContext()
 bool QcAudioTransformat::init(const QsAudioPara& sourceInfo, const QsAudioPara& destInfo)
 {
 	CloseSwrContext();
-	int64_t iSrcChannelLayout = av_get_default_channel_layout(sourceInfo.nChannel);
-	int64_t iDestChannelLayout = av_get_default_channel_layout(destInfo.nChannel);
-	AVSampleFormat iSrcSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(sourceInfo.eSample_fmt);
-	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(destInfo.eSample_fmt);
+	int64_t iSrcChannelLayout = av_get_default_channel_layout(sourceInfo.nChannels);
+	int64_t iDestChannelLayout = av_get_default_channel_layout(destInfo.nChannels);
+	AVSampleFormat iSrcSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(sourceInfo.sampleFormat);
+	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(destInfo.sampleFormat);
 	
-    m_ptr->m_pSwsCtx = swr_alloc_set_opts(NULL, iDestChannelLayout, iDestSampleFormat, destInfo.iSamplingFreq
-		, iSrcChannelLayout, iSrcSampleFormat, sourceInfo.iSamplingFreq, 0, NULL);
+    m_ptr->m_pSwsCtx = swr_alloc_set_opts(NULL, iDestChannelLayout, iDestSampleFormat, destInfo.sampleRate
+		, iSrcChannelLayout, iSrcSampleFormat, sourceInfo.sampleRate, 0, NULL);
 	if (swr_init(m_ptr->m_pSwsCtx) < 0)
 	{
 		swr_free(&m_ptr->m_pSwsCtx);
@@ -58,7 +58,7 @@ int QcAudioTransformat::getDelaySamples()
 {
 	if (m_ptr->m_pSwsCtx)
 	{
-		return (int)swr_get_delay(m_ptr->m_pSwsCtx, m_ptr->m_srcInfo.iSamplingFreq);
+		return (int)swr_get_delay(m_ptr->m_pSwsCtx, m_ptr->m_srcInfo.sampleRate);
 	}
 	return 0;
 }
@@ -69,8 +69,8 @@ bool QcAudioTransformat::transformat(const uint8_t* const srcData[], int srcSamp
 		return false;
 	int dstNum = swr_get_out_samples(m_ptr->m_pSwsCtx, srcSamples);
 
-    int dstChannel = m_ptr->m_dstInfo.nChannel;
-	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(m_ptr->m_dstInfo.eSample_fmt);
+    int dstChannel = m_ptr->m_dstInfo.nChannels;
+	AVSampleFormat iDestSampleFormat = (AVSampleFormat)FFmpegUtils::ToFFmpegAudioFormat(m_ptr->m_dstInfo.sampleFormat);
 	if (!(outFrame.format() == iDestSampleFormat
 		&& outFrame.channelCount() == dstChannel
 		&& outFrame.sampleCount() > dstNum) )

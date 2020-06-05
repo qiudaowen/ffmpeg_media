@@ -13,7 +13,7 @@ VideoPlayerModel::VideoPlayerModel()
 	m_player = std::make_unique<QcMultiMediaPlayer>(this);
 	m_transFormat = std::make_unique<FFmpegVideoTransformat>();
 	m_audioPlayer = std::make_unique<QcAudioPlayer>();
-	m_audioTrans = std::make_unique<QcAudioTransformat>();
+	m_audioTransForPlayer = std::make_unique<QcAudioTransformat>();
 }
 
 VideoPlayerModel::~VideoPlayerModel()
@@ -21,7 +21,7 @@ VideoPlayerModel::~VideoPlayerModel()
     m_player = nullptr;
     m_audioPlayer = nullptr;
     m_transFormat = nullptr;
-    m_audioTrans = nullptr;
+    m_audioTransForPlayer = nullptr;
 }
 
 void VideoPlayerModel::init(HWND hWnd)
@@ -44,23 +44,20 @@ bool VideoPlayerModel::open(const std::wstring& fileName)
 
 	const QsMediaInfo& mediaInfo = *(m_player->getMediaInfo());
 	QsAudioPara audioPara;
-	audioPara.iSamplingFreq = mediaInfo.sampleRate;
-	audioPara.eSample_fmt = FFmpegUtils::FromFFmpegAudioFormat(mediaInfo.audioFormat);
-	audioPara.nChannel = mediaInfo.nChannels;
+	audioPara.sampleRate = mediaInfo.sampleRate;
+	audioPara.sampleFormat = FFmpegUtils::FromFFmpegAudioFormat(mediaInfo.audioFormat);
+	audioPara.nChannels = mediaInfo.nChannels;
+
 	QsAudioPara bestAudioPara;
-	bRet = m_audioPlayer->open(nullptr, audioPara, &bestAudioPara);
+	bRet = m_audioPlayer->open(nullptr, nullptr, &bestAudioPara);
 	if (!bRet)
 		return false;
-
-	bRet = m_audioTrans->init(audioPara, bestAudioPara);
+	bRet = m_audioTransForPlayer->init(audioPara, bestAudioPara);
 	if (!bRet)
 		return false;
-
 	m_audioPlayer->start();
 
 	m_player->play();
-
-	//m_player->seek(mediaInfo.iFileTotalTime * 0.5);
 	return true;
 }
 
@@ -190,7 +187,7 @@ bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
 bool VideoPlayerModel::OnAudioFrame(const AVFrameRef& frame)
 {
 	AVFrameRef outFrame;
-	m_audioTrans->transformat(frame.data(), frame.sampleCount(), outFrame);
+	m_audioTransForPlayer->transformat(frame.data(), frame.sampleCount(), outFrame);
 	m_audioPlayer->playAudio(outFrame.data(0), outFrame.sampleCount());
 	return true;
 }

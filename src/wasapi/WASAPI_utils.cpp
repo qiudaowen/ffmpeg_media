@@ -1,13 +1,13 @@
 #include <Windows.h>
-#include "WASPI_utils.h"
+#include "WASAPI_utils.h"
 #include "QsAudiodef.h"
 #include <mmdeviceapi.h>
 #include <Mmreg.h>
 
-bool WASPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWaveFormat)
+bool WASAPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWaveFormat)
 {
     WAVEFORMATEX* format = pWaveFormat;
-    switch (paras.eSample_fmt)
+    switch (paras.sampleFormat)
     {
     case eSampleFormatU8:
         format->wFormatTag = WAVE_FORMAT_PCM;
@@ -24,27 +24,27 @@ bool WASPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWav
     default:
         return false;
     }
-    format->nChannels = paras.nChannel;
-    format->nSamplesPerSec = paras.iSamplingFreq;
+    format->nChannels = paras.nChannels;
+    format->nSamplesPerSec = paras.sampleRate;
     format->nBlockAlign = (format->wBitsPerSample / 8) * format->nChannels;
     format->nAvgBytesPerSec = format->nSamplesPerSec * format->nBlockAlign;
 
     return true;
 }
 
-bool WASPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pUseFormat)
+bool WASAPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pUseFormat)
 {
     bool bOk = true;
     switch (pUseFormat->wFormatTag)
     {
     case WAVE_FORMAT_PCM:
         if (pUseFormat->wBitsPerSample == 8)
-            paras.eSample_fmt = eSampleFormatU8;
+            paras.sampleFormat = eSampleFormatU8;
         else
-            paras.eSample_fmt = eSampleFormatS16;
+            paras.sampleFormat = eSampleFormatS16;
         break;
     case WAVE_FORMAT_IEEE_FLOAT:
-        paras.eSample_fmt = eSampleFormatFloat;
+        paras.sampleFormat = eSampleFormatFloat;
         break;
     case WAVE_FORMAT_EXTENSIBLE:
     {
@@ -52,13 +52,13 @@ bool WASPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pU
         if (pExFormat->SubFormat == KSDATAFORMAT_SUBTYPE_PCM)
         {
             if (pUseFormat->wBitsPerSample == 8)
-                paras.eSample_fmt = eSampleFormatU8;
+                paras.sampleFormat = eSampleFormatU8;
             else 
-                paras.eSample_fmt = eSampleFormatS16;
+                paras.sampleFormat = eSampleFormatS16;
         }
         else if (pExFormat->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
         {
-            paras.eSample_fmt = eSampleFormatFloat;
+            paras.sampleFormat = eSampleFormatFloat;
         }
         else
         {
@@ -72,8 +72,8 @@ bool WASPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pU
     }
     if (bOk)
     {
-        paras.nChannel = pUseFormat->nChannels;
-        paras.iSamplingFreq = pUseFormat->nSamplesPerSec;
+        paras.nChannels = pUseFormat->nChannels;
+        paras.sampleRate = pUseFormat->nSamplesPerSec;
     }
     return bOk;
 }

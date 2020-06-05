@@ -72,9 +72,23 @@ bool QcMultiMediaPlayerPrivate::close()
 	m_pAudioDecoder = nullptr;
 	m_pDemuxer = 0;
 
+    m_playState = eReady;
+    m_videoThreadState = eReady;
+    m_audioThreadState = eReady;
+    m_demuxerThreadState = eReady;
+
+    m_iVideoCurTime = 0;
+    m_iAudioCurTime = 0;
+    m_videoQueue.clear();
+    m_audioQueue.clear();
+
+    m_videoPacketQueue.clear();
+    m_audioPacketQueue.clear();
 	m_bFileEnd = false;
 	m_videoDecodeEnd = false;
 	m_audioDecodeEnd = false;
+
+    m_iBeginSystemTime = 0;
     return true;
 }
 
@@ -128,8 +142,8 @@ void QcMultiMediaPlayerPrivate::play()
 
 	if (m_playState != ePlaying)
 	{
+        m_iBeginSystemTime = (int)FFmpegUtils::currentMilliSecsSinceEpoch() - getCurTime();
 		_synState(ePlaying);
-		m_iBeginSystemTime = (int)FFmpegUtils::currentMilliSecsSinceEpoch() - getCurTime();
 	}	
 }
 

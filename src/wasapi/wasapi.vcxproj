@@ -19,20 +19,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CoreRunloop.cpp" />
-    <ClCompile Include="libstring.cpp" />
+    <ClInclude Include="WASAPICapture.h" />
+    <ClInclude Include="WASAPIPlayer.h" />
+    <ClInclude Include="WASAPI_utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CoreRunloop.h" />
-    <ClInclude Include="libstring.h" />
-    <ClInclude Include="libversion.h" />
-    <ClInclude Include="libweakBinder.h" />
+    <ClCompile Include="WASAPICapture.cpp" />
+    <ClCompile Include="WASAPIPlayer.cpp" />
+    <ClCompile Include="WASAPI_utils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7AB10D06-7299-47FB-A987-BA7808DACEC3}</ProjectGuid>
+    <ProjectGuid>{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Utils</RootNamespace>
+    <RootNamespace>wasapi</RootNamespace>
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <ProjectName>wasapi</ProjectName>
   </PropertyGroup>
   <Import Project="$(SolutionDir)src\props\conf.props" />
   <Import Project="$(SolutionDir)src\props\common.props" />

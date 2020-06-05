@@ -1,7 +1,7 @@
 #ifndef QC_FFMPEG_DECODER_H
 #define QC_FFMPEG_DECODER_H
 
-#include "mediaPub.h"
+#include "media_global.h"
 
 struct AVCodecContext;
 struct AVBufferRef;

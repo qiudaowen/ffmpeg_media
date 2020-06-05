@@ -32,7 +32,6 @@
     <ClCompile Include="QcAudioTransformat.cpp" />
     <ClCompile Include="QcMultiMediaPlayer.cpp" />
     <ClCompile Include="QcMultiMediaPlayerPrivate.cpp" />
-    <ClCompile Include="WSAPIPlayer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\QsAudiodef.h" />
@@ -50,7 +49,11 @@
     <ClInclude Include="QcMultiMediaPlayer.h" />
     <ClInclude Include="QcMultiMediaPlayerPrivate.h" />
     <ClInclude Include="QcVideoFrame.h" />
-    <ClInclude Include="WSAPIPlayer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\wasapi\wasapi.vcxproj">
+      <Project>{eba3dc80-a087-4b77-bc5c-d72f736df2c4}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>

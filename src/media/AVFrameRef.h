@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mediaPub.h"
+#include "media_global.h"
 #include <memory>
 
 struct AVFrame;

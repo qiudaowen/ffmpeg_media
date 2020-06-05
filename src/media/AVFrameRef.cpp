@@ -102,7 +102,8 @@ int AVFrameRef::format() const
 
 bool AVFrameRef::isHWFormat() const
 {
-	return m_pAVFrame ? m_pAVFrame->format == AV_PIX_FMT_D3D11 : false;
+    //
+	return m_pAVFrame ? m_pAVFrame->format == AV_PIX_FMT_D3D11: false;
 }
 
 int AVFrameRef::sampleCount() const

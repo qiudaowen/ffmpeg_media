@@ -4,7 +4,6 @@
 #include <memory>
 #include <thread>
 #include <mutex>
-#include "mediaPub.h"
 #include "QsMediaInfo.h"
 #include "FrameQueue.h"
 #include "PacketQueue.h"

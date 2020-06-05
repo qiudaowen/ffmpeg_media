@@ -1,7 +1,7 @@
 #ifndef QC_AUDIO_TRANSFORMAT_H
 #define QC_AUDIO_TRANSFORMAT_H
 
-#include "mediaPub.h"
+#include "media_global.h"
 #include <stdint.h>
 #include "QsAudiodef.h"
 
