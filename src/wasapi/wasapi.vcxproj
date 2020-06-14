@@ -33,8 +33,8 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>wasapi</RootNamespace>
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
     <ProjectName>wasapi</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)src\props\conf.props" />
   <Import Project="$(SolutionDir)src\props\common.props" />

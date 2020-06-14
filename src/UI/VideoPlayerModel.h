@@ -31,6 +31,7 @@ public:
 
 	void addVideoFileList(const std::vector<std::wstring>& fileList);
 	void removeVideoFileList(const std::vector<std::wstring>& fileList);
+	const std::vector<std::wstring>& fileList() const;
 protected:
     void openNext();
 	void onRender();

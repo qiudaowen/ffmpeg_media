@@ -7,6 +7,7 @@
 #include <memory>
 #include "VideoPlayerModel.h"
 #include "QcComInit.h"
+#include "CNiceSlider.h"
 
 class VideoPlayerModel;
 // CVideoPlayerDlg 对话框
@@ -35,6 +36,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnDropFiles(HDROP hDropInfo);
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -56,9 +58,10 @@ protected:
 	void setDlgItemRect(int id, int x, int y, int w, int h, int flag = 0);
 	void moveDlgItem(int id, int x, int y);
 	void adjustControlPos();
+	void addVideoFileList(const std::vector<std::wstring>& fileList);
 public:
-	CSliderCtrl m_videoProgressSlider;
-	CSliderCtrl m_volSliderCtrl;
+	CNiceSliderCtrl m_videoProgressSlider;
+	CNiceSliderCtrl m_volSliderCtrl;
 	CString m_curTime;
 	CString m_totalTime;
 };

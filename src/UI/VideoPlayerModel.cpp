@@ -118,6 +118,11 @@ void VideoPlayerModel::removeVideoFileList(const std::vector<std::wstring>& file
 	}
 }
 
+const std::vector<std::wstring>& VideoPlayerModel::fileList() const
+{
+	return m_fileList;
+}
+
 void VideoPlayerModel::openNext()
 {
     //open();

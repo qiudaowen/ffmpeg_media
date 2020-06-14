@@ -42,6 +42,9 @@
     <ClInclude Include="win\MsgWnd.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="CNiceSlider.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoPlayer.cpp">
@@ -60,6 +63,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="win\MsgWnd.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CNiceSlider.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

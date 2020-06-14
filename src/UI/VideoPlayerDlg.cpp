@@ -79,6 +79,7 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_WM_HSCROLL()
 	ON_WM_TIMER()
+	ON_WM_DROPFILES()
 	
 	ON_BN_CLICKED(IDC_PLAY_PAUSE, &CVideoPlayerDlg::OnBnClickedButtonPlay)
 
@@ -137,6 +138,8 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	m_playerModel->init(pWnd->GetSafeHwnd());
 	//m_playerModel->open(L"D:\\wow1080p60fps.mp4");
 
+	DragAcceptFiles(TRUE);
+
 	SetTimer(QmPlayTimerID, 500, NULL);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -192,7 +195,23 @@ HCURSOR CVideoPlayerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-static std::vector<CString> getOpenFileList(const wchar_t* szFilterList, CWnd* parent = nullptr, int nMaxFiles = 100)
+void CVideoPlayerDlg::OnDropFiles(HDROP hDropInfo)
+{
+	int count_droppedfile = DragQueryFileW(hDropInfo, 0xFFFFFFFF, NULL, 0);
+	std::vector<std::wstring> fileList;
+	fileList.reserve(count_droppedfile);
+	for (int i = 0; i < count_droppedfile; ++i)
+	{
+		wchar_t filepath[MAX_PATH] = { 0 };
+		if (DragQueryFileW(hDropInfo, i, filepath, MAX_PATH) > 0)
+		{
+			fileList.push_back(filepath);
+		}
+	}
+	addVideoFileList(fileList);
+}
+
+static std::vector<std::wstring> getOpenFileList(const wchar_t* szFilterList, CWnd* parent = nullptr, int nMaxFiles = 100)
 {
 	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_ALLOWMULTISELECT | OFN_ENABLESIZING | OFN_HIDEREADONLY, szFilterList, parent);
 	fileDlg.m_ofn.nMaxFile = nMaxFiles * MAX_PATH;
@@ -201,14 +220,14 @@ static std::vector<CString> getOpenFileList(const wchar_t* szFilterList, CWnd* p
 	fileDlg.m_ofn.lpstrTitle = L"打开文件";
 	int iRet = fileDlg.DoModal();
 
-	std::vector<CString> fileList;
+	std::vector<std::wstring> fileList;
 	if (iRet == IDOK)
 	{
 		POSITION pos_file = fileDlg.GetStartPosition();
 		while (NULL != pos_file)
 		{
 			CString pathName = fileDlg.GetNextPathName(pos_file);
-			fileList.push_back(pathName);
+			fileList.emplace_back(CT2CW(pathName.GetBuffer()));
 		}
 	}
 	buffer.ReleaseBuffer();
@@ -218,14 +237,22 @@ static std::vector<CString> getOpenFileList(const wchar_t* szFilterList, CWnd* p
 void CVideoPlayerDlg::OnBnClickedButtonAdd()
 {
 	TCHAR szFilter[] = _T("视频文件(*.FLV,*.mp4,*.avi,*.wmv,*.mkv)|*.FLV;*.mp4;*.avi;*.wmv;*.mkv|所有文件(*.*)|*.*||");
-	std::vector<CString> fileList = getOpenFileList(szFilter, this);
+	std::vector<std::wstring> fileList = getOpenFileList(szFilter, this);
 	std::vector<std::wstring> wfileList;
 	for (const auto& item : fileList)
 	{
-		m_videoFileList.AddString(item);
-		wfileList.push_back(std::wstring(item.GetString()));
+		wfileList.push_back(item);
 	}
-	m_playerModel->addVideoFileList(wfileList);
+	addVideoFileList(wfileList);
+}
+
+void CVideoPlayerDlg::addVideoFileList(const std::vector<std::wstring>& fileList)
+{
+	for (const auto& item : fileList)
+	{
+		m_videoFileList.AddString(CW2CT(item.c_str()));
+	}
+	m_playerModel->addVideoFileList(fileList);
 }
 
 
@@ -358,3 +385,4 @@ void CVideoPlayerDlg::adjustControlPos()
 	bottomItemX += showVideoListBtnRect.Width();
 	moveDlgItem(IDC_SHOW_LIST, bottomItemX, bottomItemY);
 }
+

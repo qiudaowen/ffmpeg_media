@@ -33,6 +33,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Utils</RootNamespace>
     <ConfigurationType>StaticLibrary</ConfigurationType>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)src\props\conf.props" />
   <Import Project="$(SolutionDir)src\props\common.props" />
