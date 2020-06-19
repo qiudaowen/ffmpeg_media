@@ -331,14 +331,19 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 				if (iVideoQueueSize > 0)
 				{
 					AVFrameRef frame;
-					if (m_pNotify && m_videoQueue.front(frame) && diffToCurrentTime(frame) < 5)
+					if (m_pNotify)
 					{
-						if (m_pNotify->OnVideoFrame(frame))
-						{
-							--iVideoQueueSize;
-							m_iVideoCurTime = frame.ptsMsTime();
-							m_videoQueue.pop(frame);
-						}
+                        //¶ªÖ¡
+                        while (m_videoQueue.front(frame) && diffToCurrentTime(frame) < 5)
+                        {
+                            --iVideoQueueSize;
+                            m_iVideoCurTime = frame.ptsMsTime();
+                            m_videoQueue.pop(frame);
+                        }
+                        if (frame)
+                        {
+                            m_pNotify->OnVideoFrame(frame);
+                        }
 					}
 				}
 			}
