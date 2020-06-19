@@ -60,7 +60,7 @@ AVPacketPtr FFmpegUtils::allocAVPacket()
 int FFmpegUtils::currentMilliSecsSinceEpoch()
 {
 	using namespace std::chrono;
-	auto timePoint = system_clock::now();
+	auto timePoint = steady_clock::now();
 	auto cur = timePoint.time_since_epoch();
 	milliseconds ms = duration_cast<milliseconds>(cur);
 	return (int)ms.count();

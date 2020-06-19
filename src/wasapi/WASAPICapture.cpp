@@ -87,6 +87,7 @@ HRESULT WASAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosest
                 audioParams.sampleFormat = toNonPlanarFormat(audioParams.sampleFormat);
 
             CoTaskMemPtr<WAVEFORMATEX> audioFormat((WAVEFORMATEX*)CoTaskMemAlloc(sizeof(WAVEFORMATEX)));
+            audioFormat->cbSize = 0;
             if (!WASAPI_utils::toWAVEFORMATPCMEX(audioParams, audioFormat))
                 break;
 
