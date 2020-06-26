@@ -39,10 +39,7 @@ public:
 	uint64_t channelLayout() const;
 	int channelCount() const;
 
-	int ptsSystemTime() const;
-	void setPtsSystemTime(int sysPts);
-
-	int ptsMsTime();
+	int ptsMsTime() const;
 	void setPtsMsTime(int msTime);
 private:
     std::shared_ptr<AVFrame> m_pAVFrame = nullptr;

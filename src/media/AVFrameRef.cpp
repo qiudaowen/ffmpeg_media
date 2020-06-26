@@ -121,17 +121,7 @@ int AVFrameRef::channelCount() const
 	return m_pAVFrame ? av_get_channel_layout_nb_channels(m_pAVFrame->channel_layout) : 0;
 }
 
-int AVFrameRef::ptsSystemTime() const
-{
-	return m_ptsSystemTime;
-}
-
-void AVFrameRef::setPtsSystemTime(int sysPts)
-{
-	m_ptsSystemTime = sysPts;
-}
-
-int AVFrameRef::ptsMsTime()
+int AVFrameRef::ptsMsTime() const
 {
 	return m_msPts;
 }

@@ -44,7 +44,7 @@ protected:
 	void _synState(int eState);
 	bool isPacketQueueFull();
 	int readPacket(bool bVideo, AVPacketPtr& ptr);
-	int toSystemTime(int64_t pts, AVStream*);
+	int toMediaTime(int64_t pts, AVStream*);
 	int diffToCurrentTime(const AVFrameRef& frame);
 
 	void demuxeThread();

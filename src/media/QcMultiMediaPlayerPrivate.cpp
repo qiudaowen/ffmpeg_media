@@ -226,7 +226,7 @@ int QcMultiMediaPlayerPrivate::readPacket(bool bVideo, AVPacketPtr& ptr)
 	return bRet;
 }
 
-int QcMultiMediaPlayerPrivate::toSystemTime(int64_t pts, AVStream* pStream)
+int QcMultiMediaPlayerPrivate::toMediaTime(int64_t pts, AVStream* pStream)
 {
 	int iTime = 0;
 	if (pStream == nullptr)
@@ -237,12 +237,12 @@ int QcMultiMediaPlayerPrivate::toSystemTime(int64_t pts, AVStream* pStream)
 	{
 		iTime = QmBaseTimeToMSTime(pts, pStream->time_base);
 	}
-	return m_iBeginSystemTime + iTime;
+	return iTime;
 }
 
 int QcMultiMediaPlayerPrivate::diffToCurrentTime(const AVFrameRef& frame)
 {
-	int iDiff = (int)frame.ptsSystemTime() - FFmpegUtils::currentMilliSecsSinceEpoch();
+	int iDiff = (int)frame.ptsMsTime() - (FFmpegUtils::currentMilliSecsSinceEpoch() - m_iBeginSystemTime);
 	return iDiff;
 }
 
@@ -359,9 +359,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 						iRet = m_pVideoDecoder->recv(frame);
 						if (iRet == FFmpegVideoDecoder::kOk)
 						{
-							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->videoStream());
-							int mediaTime = playSysTime - m_iBeginSystemTime;
-							frame.setPtsSystemTime(playSysTime);
+							int mediaTime = toMediaTime(frame->pts, m_pDemuxer->videoStream());
 							frame.setPtsMsTime(mediaTime);
 
 							QmStdMutexLocker(m_videoQueue.mutex());
@@ -441,9 +439,7 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 						iRet = m_pAudioDecoder->recv(frame);
 						if (iRet == FFmpegVideoDecoder::kOk)
 						{
-							int playSysTime = toSystemTime(frame->pts, m_pDemuxer->audioStream());
-							int mediaTime = playSysTime - m_iBeginSystemTime;
-							frame.setPtsSystemTime(playSysTime);
+							int mediaTime = toMediaTime(frame->pts, m_pDemuxer->audioStream());
 							frame.setPtsMsTime(mediaTime);
 
 							QmStdMutexLocker(m_audioQueue.mutex());
