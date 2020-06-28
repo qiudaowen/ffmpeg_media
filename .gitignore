@@ -1,0 +1,6 @@
+/src/UI/*.aps
+/src/UI/*.user
+/src/capture/*.user
+/src/graphics/direct3d11/shaderInclude
+/.vs
+/out

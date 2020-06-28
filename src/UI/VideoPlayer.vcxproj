@@ -69,6 +69,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>DXGI.lib;D3D11.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -100,6 +101,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>DXGI.lib;D3D11.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -124,6 +126,7 @@
     <ClInclude Include="VideoPlayer.h" />
     <ClInclude Include="VideoPlayerDlg.h" />
     <ClInclude Include="VideoPlayerModel.h" />
+    <ClInclude Include="VideoRenderWindow.h" />
     <ClInclude Include="win\MsgWnd.h" />
   </ItemGroup>
   <ItemGroup>
@@ -135,6 +138,7 @@
     <ClCompile Include="VideoPlayer.cpp" />
     <ClCompile Include="VideoPlayerDlg.cpp" />
     <ClCompile Include="VideoPlayerModel.cpp" />
+    <ClCompile Include="VideoRenderWindow.cpp" />
     <ClCompile Include="win\MsgWnd.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -147,6 +151,9 @@
     <Image Include="res\VideoPlayer.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\graphics\graphics.vcxproj">
+      <Project>{2fb57471-4085-4718-8763-1d4ded4aa68f}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\media\media.vcxproj">
       <Project>{0c54486b-a367-40f6-b84b-5a0bf128c679}</Project>
     </ProjectReference>

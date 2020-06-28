@@ -1,7 +1,6 @@
 #include "VideoPlayerModel.h"
 #include "libmedia/QcMultiMediaPlayer.h"
 #include "libmedia/FFmpegUtils.h"
-#include "libmedia/FFmpegVideoTransformat.h"
 #include "libmedia/QcAudioTransformat.h"
 #include "libmedia/QcAudioPlayer.h"
 #include "libmedia/AVFrameRef.h"
@@ -11,7 +10,6 @@
 VideoPlayerModel::VideoPlayerModel()
 {
 	m_player = std::make_unique<QcMultiMediaPlayer>(this);
-	m_transFormat = std::make_unique<FFmpegVideoTransformat>();
 	m_audioPlayer = std::make_unique<QcAudioPlayer>();
 	m_audioTransForPlayer = std::make_unique<QcAudioTransformat>();
 }
@@ -20,17 +18,12 @@ VideoPlayerModel::~VideoPlayerModel()
 {
     m_player = nullptr;
     m_audioPlayer = nullptr;
-    m_transFormat = nullptr;
     m_audioTransForPlayer = nullptr;
 }
 
-void VideoPlayerModel::init(HWND hWnd)
+void VideoPlayerModel::init(std::weak_ptr<VideoFrameNotify>&& notify)
 {
-	m_hWnd = hWnd;
-
-	RECT rc;
-	GetClientRect(hWnd, &rc);
-	m_memorySurface.resize(rc.right - rc.left, rc.bottom - rc.top);
+	m_videoNotify = std::move(notify);
 }
 
 bool VideoPlayerModel::open(const std::wstring& fileName)
@@ -145,47 +138,11 @@ void VideoPlayerModel::openNext()
 	}
 }
 
-void VideoPlayerModel::onRender()
-{
-	RECT rc;
-	GetClientRect(m_hWnd, &rc);
-	int w = rc.right - rc.left;
-	int h = rc.bottom - rc.top;
-	m_memorySurface.resize(w, h);
-
-	{
-		QmStdMutexLocker(m_lastFrameMutex);
-		const AVFrameRef& frame = m_lastFrame;
-		m_transFormat->transformat(m_lastFrame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
-			, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface.format()), m_memorySurface.datas(), m_memorySurface.lineSizes());
-
-	}
-
-	HDC hDC = GetDC(m_hWnd);
-	::BitBlt(hDC, 0, 0, w, h, m_memorySurface.dcHandle(), 0, 0, SRCCOPY);
-	ReleaseDC(m_hWnd, hDC);
-}
-
 bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
 {
-	{
-		AVFrameRef memFrame = AVFrameRef::fromHWFrame(frame);
-		QmStdMutexLocker(m_lastFrameMutex);
-		m_lastFrame = memFrame;
-	}
-	if (!m_bUpdating)
-	{
-		m_bUpdating = true;
-		std::weak_ptr<VideoPlayerModel> weakThis = shared_from_this();
-		MsgWnd::mainMsgWnd()->post([weakThis]() {
-			auto pThis = weakThis.lock();
-			if (pThis)
-			{
-				pThis->m_bUpdating = false;
-				pThis->onRender();
-			}	
-		});
-	}
+	auto videoNotify = m_videoNotify.lock();
+	if (videoNotify)
+		videoNotify->OnVideoFrame(frame);
 	return true;
 }
 

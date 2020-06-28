@@ -7,6 +7,7 @@
 #include "VideoPlayerDlg.h"
 #include "afxdialogex.h"
 #include "VideoPlayerModel.h"
+#include "VideoRenderWindow.h"
 #include "QcComInit.h"
 #include "win/MsgWnd.h"
 #include <vector>
@@ -68,6 +69,7 @@ void CVideoPlayerDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_VIDEO, m_videoFileList);
 	DDX_Control(pDX, IDC_SLIDER_VIDEO, m_videoProgressSlider);
 	DDX_Control(pDX, IDC_SLIDER_VOLUME, m_volSliderCtrl);
+	DDX_Control(pDX, IDC_VIDEOWND, *m_renderWindow.get());
 	DDX_Text(pDX, IDC_PLAYTIME, m_curTime);
 	DDX_Text(pDX, IDC_TOTALTIME, m_totalTime);
 }
@@ -80,6 +82,7 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_WM_HSCROLL()
 	ON_WM_TIMER()
 	ON_WM_DROPFILES()
+	ON_WM_CLOSE()
 	
 	ON_BN_CLICKED(IDC_PLAY_PAUSE, &CVideoPlayerDlg::OnBnClickedButtonPlay)
 
@@ -93,6 +96,8 @@ END_MESSAGE_MAP()
 
 BOOL CVideoPlayerDlg::OnInitDialog()
 {
+	m_renderWindow = std::make_shared<VideoRenderWindow>();
+
 	CDialogEx::OnInitDialog();
 
 	// 将“关于...”菜单项添加到系统菜单中。
@@ -134,8 +139,10 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	
 
 	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
+	m_renderWindow->init(pWnd->GetSafeHwnd());
+
 	m_playerModel = std::make_shared<VideoPlayerModel>();
-	m_playerModel->init(pWnd->GetSafeHwnd());
+	m_playerModel->init(m_renderWindow);
 	//m_playerModel->open(L"D:\\wow1080p60fps.mp4");
 
 	DragAcceptFiles(TRUE);
@@ -188,6 +195,12 @@ void CVideoPlayerDlg::OnSize(UINT nType, int cx, int cy)
 	CDialogEx::OnSize(nType, cx, cy);
 	if (m_bInitDialog)
 		adjustControlPos();
+}
+
+void CVideoPlayerDlg::OnClose()
+{
+	CWnd::OnClose();
+	PostQuitMessage(0);
 }
 
 HCURSOR CVideoPlayerDlg::OnQueryDragIcon()

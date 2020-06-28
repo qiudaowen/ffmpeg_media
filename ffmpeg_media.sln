@@ -34,6 +34,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{F253
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wasapi", "src\wasapi\wasapi.vcxproj", "{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics", "src\graphics\graphics.vcxproj", "{2FB57471-4085-4718-8763-1D4DED4AA68F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -72,6 +74,14 @@ Global
 		{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}.Release|x64.Build.0 = Release|x64
 		{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}.Release|x86.ActiveCfg = Release|Win32
 		{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}.Release|x86.Build.0 = Release|Win32
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Debug|x64.ActiveCfg = Debug|x64
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Debug|x64.Build.0 = Debug|x64
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Debug|x86.ActiveCfg = Debug|Win32
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Debug|x86.Build.0 = Debug|Win32
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Release|x64.ActiveCfg = Release|x64
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Release|x64.Build.0 = Release|x64
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Release|x86.ActiveCfg = Release|Win32
+		{2FB57471-4085-4718-8763-1D4DED4AA68F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -163,6 +163,7 @@ void QcMultiMediaPlayerPrivate::seek(int msTime)
 	if (m_pDemuxer == nullptr)
 		return;
 
+	//TODO: ÒÆµ½ Demuxer Ïß³Ì
 	int lastState = m_playState;
 	if (m_playState == ePlaying)
 		_synState(ePause);

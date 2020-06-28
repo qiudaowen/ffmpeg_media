@@ -10,6 +10,7 @@
 #include "CNiceSlider.h"
 
 class VideoPlayerModel;
+class VideoRenderWindow;
 // CVideoPlayerDlg 对话框
 class CVideoPlayerDlg : public CDialogEx
 {
@@ -40,6 +41,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
+	afx_msg void OnClose();
 	afx_msg void OnBnClickedButtonAdd();
 	afx_msg void OnBnClickedButtonPlay();
 	afx_msg void OnLbnSelchangeListVideo();
@@ -49,6 +51,7 @@ public:
 
 protected:
 	std::shared_ptr<VideoPlayerModel> m_playerModel;
+	std::shared_ptr<VideoRenderWindow> m_renderWindow;
 	QcComInit comInit;
 
 	bool m_bInitDialog = false;

@@ -91,3 +91,5 @@ private: \
 #define HIWORD(l)           ((WORD)((((DWORD_PTR)(l)) >> 16) & 0xffff))
 #endif
 
+#define QmStdMutexLocker(mutex1) std::lock_guard<std::mutex> QmUniqueVarName(mutex1)
+
