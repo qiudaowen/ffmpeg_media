@@ -32,6 +32,13 @@ QcMultiMediaPlayerPrivate::~QcMultiMediaPlayerPrivate()
     close();
 }
 
+void QcMultiMediaPlayerPrivate::setHwDevice(AVBufferRef* device_ctx)
+{
+	av_buffer_unref(&m_hw_device_ctx);
+	if (device_ctx)
+		m_hw_device_ctx = av_buffer_ref(device_ctx);
+}
+
 bool QcMultiMediaPlayerPrivate::open(const char* pFile)
 {
     close();
@@ -43,12 +50,15 @@ bool QcMultiMediaPlayerPrivate::open(const char* pFile)
 		AVStream* pVideoStream = m_pDemuxer->videoStream();
 		if (pVideoStream)
 		{
-			m_pVideoDecoder = std::make_unique<FFmpegVideoDecoder>(pVideoStream->codecpar, true);
+			m_pVideoDecoder = std::make_unique<FFmpegVideoDecoder>();
+			m_pVideoDecoder->setHwDevice(m_hw_device_ctx);
+			m_pVideoDecoder->open(pVideoStream->codecpar);
 		}
 		AVStream* pAudioStream = m_pDemuxer->audioStream();
 		if (pAudioStream)
 		{
-			m_pAudioDecoder = std::make_unique<FFmpegAudioDecoder>(pAudioStream->codecpar);
+			m_pAudioDecoder = std::make_unique<FFmpegAudioDecoder>();
+			m_pAudioDecoder->open(pAudioStream->codecpar);
 		}
 	}
 	_start();
@@ -68,9 +78,11 @@ bool QcMultiMediaPlayerPrivate::close()
 	if (m_demuxerThread.joinable())
 		m_demuxerThread.join();
 
-	m_pVideoDecoder = nullptr;
-	m_pAudioDecoder = nullptr;
-	m_pDemuxer = 0;
+	m_pVideoDecoder->close();
+	av_buffer_unref(&m_hw_device_ctx);
+
+	m_pAudioDecoder->close();
+	m_pDemuxer = nullptr;
 
     m_playState = eReady;
     m_videoThreadState = eReady;
@@ -353,7 +365,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(true, pkt) || m_pDemuxer->isFileEnd())
 				{
-					int iRet = m_pVideoDecoder->Decode(pkt.get());
+					int iRet = m_pVideoDecoder->decode(pkt.get());
 					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{
 						AVFrameRef frame;
@@ -433,7 +445,7 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(false, pkt) || m_pDemuxer->isFileEnd())
 				{
-					int iRet = m_pAudioDecoder->Decode(pkt.get());
+					int iRet = m_pAudioDecoder->decode(pkt.get());
 					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{
 						AVFrameRef frame;

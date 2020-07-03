@@ -4,6 +4,7 @@
 #include "libmedia/QcAudioTransformat.h"
 #include "libmedia/QcAudioPlayer.h"
 #include "libmedia/AVFrameRef.h"
+#include "libmedia/FFmpegHwDevice.h"
 #include "utils/libstring.h"
 #include "win/MsgWnd.h"
 
@@ -12,6 +13,7 @@ VideoPlayerModel::VideoPlayerModel()
 	m_player = std::make_unique<QcMultiMediaPlayer>(this);
 	m_audioPlayer = std::make_unique<QcAudioPlayer>();
 	m_audioTransForPlayer = std::make_unique<QcAudioTransformat>();
+	m_hwDevice = std::make_unique<FFmpegHwDevice>();
 }
 
 VideoPlayerModel::~VideoPlayerModel()
@@ -21,9 +23,11 @@ VideoPlayerModel::~VideoPlayerModel()
     m_audioTransForPlayer = nullptr;
 }
 
-void VideoPlayerModel::init(std::weak_ptr<VideoFrameNotify>&& notify)
+void VideoPlayerModel::init(std::weak_ptr<VideoFrameNotify>&& notify, ID3D11Device* pHwDecodeDevcie)
 {
 	m_videoNotify = std::move(notify);
+	m_hwDevice->attach(pHwDecodeDevcie);
+	m_player->setHwDevice(m_hwDevice->hwDevice().get());
 }
 
 bool VideoPlayerModel::open(const std::wstring& fileName)

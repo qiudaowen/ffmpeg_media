@@ -20,26 +20,23 @@ public:
         kAgain,
         kOtherError,
     };
-    FFmpegVideoDecoder(const AVCodecParameters *par, bool hw = false);
-	FFmpegVideoDecoder(int srcW, int srcH, int srcFormat, int codecID, bool hw = false);
+    FFmpegVideoDecoder();
 	~FFmpegVideoDecoder();
 
-	int Decode(const AVPacket* pkt);
-	int Decode(const char* dataIn, int dataSize);
+	void setHwDevice(AVBufferRef* device_ctx);
+	bool open(const AVCodecParameters *par);
+	bool open(int srcW, int srcH, int srcFormat, int codecID);
+	void close();
+
+	int decode(const AVPacket* pkt);
+	int decode(const char* dataIn, int dataSize);
 	int recv(AVFrameRef& frame);
 	void flush();
 protected:
-    void Close();
-    void Open(const AVCodecParameters *par, bool hw);
-    void OpenCodec(const AVCodecParameters *par, AVCodec* pCodec, bool hw);
+    void openCodec(const AVCodecParameters *par, int srcW, int srcH, int srcFormat, int codecID);
 protected:
 	AVCodecContext* m_pCodecCtx = nullptr;
 	AVCodec* m_pCodec = nullptr;
 	AVBufferRef * m_hw_device_ctx = nullptr;
-
-    int m_srcW = 0;
-    int m_srcH = 0;
-    int m_srcFormat = 0;
-    int m_codeID = 0;
 };
 #endif

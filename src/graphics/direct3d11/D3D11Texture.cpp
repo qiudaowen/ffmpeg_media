@@ -23,6 +23,26 @@ ID3D11ShaderResourceView* D3D11Texture::resourceView(int index)
 	return nullptr;
 }
 
+CComPtr<ID3D11ShaderResourceView> createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int subResouce, int format)
+{
+	CComPtr<ID3D11ShaderResourceView> resView;
+	D3D11_SHADER_RESOURCE_VIEW_DESC const luminancePlaneDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(
+		texture,
+		D3D11_SRV_DIMENSION_TEXTURE2DARRAY,
+		(DXGI_FORMAT)format
+	);
+	HRESULT hr = device->CreateShaderResourceView(
+		texture,
+		&luminancePlaneDesc,
+		&resView
+	);
+	if (FAILED(hr))
+	{
+		return nullptr;
+	}
+	return resView;
+}
+
 CComPtr<ID3D11ShaderResourceView> D3D11Texture::createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int format)
 {
 	CComPtr<ID3D11ShaderResourceView> resView;
@@ -53,6 +73,34 @@ void D3D11Texture::clear()
 	m_width = 0;
 	m_height = 0;
 	m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
+}
+
+bool D3D11Texture::updateFromTexArray(ID3D11Texture2D* tex, int index)
+{
+	D3D11_TEXTURE2D_DESC desc;
+	tex->GetDesc(&desc);
+	if (m_dxgiFormat != desc.Format || desc.Width != m_width || desc.Height != m_height)
+	{
+		clear();
+		switch (desc.Format)
+		{
+		case DXGI_FORMAT_NV12:
+		{
+			createNV12Texture(desc.Width, desc.Height);
+			break;
+		}
+		}
+	}
+	if (m_dxgiFormat == DXGI_FORMAT_UNKNOWN)
+		return false;
+	if (m_texturePlanes[1])
+		return false;
+
+	CComPtr<ID3D11DeviceContext> d3dContext;
+	m_d3d11Device->GetImmediateContext(&d3dContext);
+
+	d3dContext->CopySubresourceRegion(m_texturePlanes[0], 0,0,0,0, tex, index, NULL);
+	return true;
 }
 
 void D3D11Texture::createYUVTexture(int width, int height)

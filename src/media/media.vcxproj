@@ -22,6 +22,7 @@
     <ClCompile Include="AVFrameRef.cpp" />
     <ClCompile Include="FFmpegAudioDecoder.cpp" />
     <ClCompile Include="FFmpegDemuxer.cpp" />
+    <ClCompile Include="FFmpegHwDevice.cpp" />
     <ClCompile Include="FFmpegUtils.cpp" />
     <ClCompile Include="FFmpegVideoDecoder.cpp" />
     <ClCompile Include="FFmpegVideoTransformat.cpp" />
@@ -39,6 +40,7 @@
     <ClInclude Include="AVFrameRef.h" />
     <ClInclude Include="FFmpegAudioDecoder.h" />
     <ClInclude Include="FFmpegDemuxer.h" />
+    <ClInclude Include="FFmpegHwDevice.h" />
     <ClInclude Include="FFmpegUtils.h" />
     <ClInclude Include="FFmpegVideoDecoder.h" />
     <ClInclude Include="FFmpegVideoTransformat.h" />

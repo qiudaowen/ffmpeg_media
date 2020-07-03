@@ -35,12 +35,13 @@ static HRESULT createDevice(uint64_t adapterLUID, ID3D11Device** ppDevice, ID3D1
 #ifdef _DEBUG
 		D3D11_CREATE_DEVICE_DEBUG |
 #endif // _DEBUG
-		D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+		D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
 		nullptr, 0, // Highest available feature level
 		D3D11_SDK_VERSION,
 		ppDevice,
 		nullptr,    // Actual feature level
 		ppDeviceContext);  // Device context
+
 	return hr;
 }
 
@@ -62,6 +63,12 @@ bool D3D11Device::create(uint64_t adapterLUID)
 	HRESULT hr = createDevice(adapterLUID, &m_d3d11Device, &m_d3d11DeviceContext);
 	if (FAILED(hr))
 		return false;
+
+	CComPtr<ID3D10Multithread>  pMultithread;
+	hr = m_d3d11Device->QueryInterface(IID_PPV_ARGS(&pMultithread));
+	if (SUCCEEDED(hr)) {
+		pMultithread->SetMultithreadProtected(TRUE);
+	}
 
 	if (!initShaderResource())
 		return false;
@@ -184,9 +191,62 @@ void D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
 		_draw(nvPS, resView, 2, dstRect);
 		break;
 	}
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_B8G8R8X8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_SNORM:
+	{
+		ID3D11ShaderResourceView* resView[] = {
+			pTexture->resourceView(0)
+		};
+		CComPtr<ID3D11PixelShader> nvPS = m_shaderResource->pixelShader(ShaderResource::kPS_Textures);
+		_draw(nvPS, resView, 1, dstRect);
+		break;
+	}
 	default:
 		break;
 	}
+}
+
+
+bool D3D11Device::drawTexture(ID3D11Texture2D* texture, const RECT& dstRect)
+{
+	D3D11_TEXTURE2D_DESC desc;
+	texture->GetDesc(&desc);
+	switch (desc.Format)
+	{
+	case DXGI_FORMAT_NV12:
+	{
+		CComPtr<ID3D11ShaderResourceView> resViews[2];
+		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, DXGI_FORMAT_R8_UNORM);
+		resViews[1] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, DXGI_FORMAT_R8G8_UNORM);
+		if (resViews[0] && resViews[1])
+		{
+			CComPtr<ID3D11PixelShader> nvPS = m_shaderResource->pixelShader(ShaderResource::kPS_NV12);
+			ID3D11ShaderResourceView* arrayView[] = { resViews[0], resViews[1]};
+			_draw(nvPS, arrayView, 2, dstRect);
+			return true;
+		}
+		break;
+	}
+	case DXGI_FORMAT_B8G8R8A8_UNORM:
+	case DXGI_FORMAT_B8G8R8X8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_UNORM:
+	case DXGI_FORMAT_R8G8B8A8_SNORM:
+	{
+		CComPtr<ID3D11ShaderResourceView> resViews[1];
+		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, desc.Format);
+		if (resViews[0])
+		{
+			CComPtr<ID3D11PixelShader> nvPS = m_shaderResource->pixelShader(ShaderResource::kPS_Textures);
+			ID3D11ShaderResourceView* arrayView[] = { resViews[0] };
+			_draw(nvPS, arrayView, 1, dstRect);
+			return true;
+		}
+		break;
+	}
+	}
+	return false;
 }
 
 void D3D11Device::present()
@@ -199,7 +259,7 @@ ID3D11Device* D3D11Device::device() const
 	return m_d3d11Device;
 }
 
-CComPtr<ID3D11DeviceContext> D3D11Device::deviceContext() const
+ID3D11DeviceContext* D3D11Device::deviceContext() const
 {
 	return m_d3d11DeviceContext;
 }

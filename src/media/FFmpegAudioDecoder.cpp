@@ -7,26 +7,27 @@ extern "C"{
 #include <libswscale/swscale.h>
 }
 
-FFmpegAudioDecoder::FFmpegAudioDecoder(const AVCodecParameters *par)
+FFmpegAudioDecoder::FFmpegAudioDecoder()
 {
-    Open(par);
+
 }
 
 FFmpegAudioDecoder::~FFmpegAudioDecoder()
 {
-	Close();
+	close();
 }
 
 void FFmpegAudioDecoder::flush()
 {
-	avcodec_flush_buffers(m_pCodecCtx);
+	if (m_pCodecCtx)
+		avcodec_flush_buffers(m_pCodecCtx);
 }
 
-void FFmpegAudioDecoder::Open(const AVCodecParameters *par)
+void FFmpegAudioDecoder::open(const AVCodecParameters *par)
 {
     do
     {
-        Close();
+        close();
 
         AVCodec* pCodec = avcodec_find_decoder(par->codec_id);
         if (pCodec)
@@ -57,7 +58,7 @@ void FFmpegAudioDecoder::OpenCodec(const AVCodecParameters *par, AVCodec* pCodec
 }
 
 
-void FFmpegAudioDecoder::Close()
+void FFmpegAudioDecoder::close()
 {
     if (m_pCodecCtx)
     {
@@ -67,17 +68,17 @@ void FFmpegAudioDecoder::Close()
 }
 
 
-int FFmpegAudioDecoder::Decode(const char* dataIn, int dataSize)
+int FFmpegAudioDecoder::decode(const char* dataIn, int dataSize)
 {
     AVPacket packet;
 	av_init_packet(&packet);
 	packet.data = (uint8_t*)dataIn;
 	packet.size = dataSize;
 
-	return Decode(&packet);
+	return decode(&packet);
 }
 
-int FFmpegAudioDecoder::Decode(const AVPacket* pkt)
+int FFmpegAudioDecoder::decode(const AVPacket* pkt)
 {
 	return avcodec_send_packet(m_pCodecCtx, pkt);
 }

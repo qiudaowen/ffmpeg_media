@@ -45,6 +45,12 @@
     <ClInclude Include="CNiceSlider.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="VideoPlayerApp.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
+    <ClInclude Include="VideoRenderWindow.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoPlayer.cpp">
@@ -66,6 +72,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CNiceSlider.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoPlayerApp.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="VideoRenderWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

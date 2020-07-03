@@ -13,6 +13,11 @@ QcMultiMediaPlayer::~QcMultiMediaPlayer()
     delete m_ptr;
 }
 
+void QcMultiMediaPlayer::setHwDevice(AVBufferRef* device_ctx)
+{
+	m_ptr->setHwDevice(device_ctx);
+}
+
 bool QcMultiMediaPlayer::open(const char* pFile)
 {
     return m_ptr->open(pFile);

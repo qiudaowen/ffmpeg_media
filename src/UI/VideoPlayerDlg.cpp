@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include "VideoPlayerModel.h"
 #include "VideoRenderWindow.h"
+#include "VideoPlayerApp.h"
 #include "QcComInit.h"
 #include "win/MsgWnd.h"
 #include <vector>
@@ -69,7 +70,7 @@ void CVideoPlayerDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_LIST_VIDEO, m_videoFileList);
 	DDX_Control(pDX, IDC_SLIDER_VIDEO, m_videoProgressSlider);
 	DDX_Control(pDX, IDC_SLIDER_VOLUME, m_volSliderCtrl);
-	DDX_Control(pDX, IDC_VIDEOWND, *m_renderWindow.get());
+	// DDX_Control(pDX, IDC_VIDEOWND, *m_renderWindow.get());
 	DDX_Text(pDX, IDC_PLAYTIME, m_curTime);
 	DDX_Text(pDX, IDC_TOTALTIME, m_totalTime);
 }
@@ -96,8 +97,6 @@ END_MESSAGE_MAP()
 
 BOOL CVideoPlayerDlg::OnInitDialog()
 {
-	m_renderWindow = std::make_shared<VideoRenderWindow>();
-
 	CDialogEx::OnInitDialog();
 
 	// 将“关于...”菜单项添加到系统菜单中。
@@ -125,29 +124,21 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
-	UpdateWindow();
-
 	m_bInitDialog = true;
 	MsgWnd::mainMsgWnd()->post([this]() {
+		m_videoProgressSlider.SetRange(0, 10000, TRUE);
+		m_volSliderCtrl.SetRange(0, 10000, TRUE);
+
 		adjustControlPos();
+		SetTimer(QmPlayTimerID, 500, NULL);
 		UpdateWindow();
 	});
 
-	m_videoProgressSlider.SetRange(0, 10000, TRUE);
-	m_volSliderCtrl.SetRange(0, 10000, TRUE);
-	
-
-	CWnd* pWnd = GetDlgItem(IDC_VIDEOWND);
-	m_renderWindow->init(pWnd->GetSafeHwnd());
-
-	m_playerModel = std::make_shared<VideoPlayerModel>();
-	m_playerModel->init(m_renderWindow);
-	//m_playerModel->open(L"D:\\wow1080p60fps.mp4");
+	HWND hWnd = ::GetDlgItem(m_hWnd, IDC_VIDEOWND);
+	QmVideoApp->init(hWnd);
 
 	DragAcceptFiles(TRUE);
 
-	SetTimer(QmPlayTimerID, 500, NULL);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -265,13 +256,13 @@ void CVideoPlayerDlg::addVideoFileList(const std::vector<std::wstring>& fileList
 	{
 		m_videoFileList.AddString(CW2CT(item.c_str()));
 	}
-	m_playerModel->addVideoFileList(fileList);
+	QmVideoPlayerModel->addVideoFileList(fileList);
 }
 
 
 void CVideoPlayerDlg::OnBnClickedButtonPlay()
 {
-	m_playerModel->trigger();
+	QmVideoPlayerModel->trigger();
 }
 
 void CVideoPlayerDlg::OnLbnSelchangeListVideo()
@@ -295,14 +286,14 @@ void CVideoPlayerDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	{
 	case IDC_SLIDER_VIDEO:
 	{
-		if (m_playerModel)
-			m_playerModel->setProgress(fPos);
+		if (QmVideoPlayerModel)
+			QmVideoPlayerModel->setProgress(fPos);
 		break;
 	}
 	case IDC_SLIDER_VOLUME:
 	{
-		if (m_playerModel)
-			m_playerModel->setVolume(fPos);
+		if (QmVideoPlayerModel)
+			QmVideoPlayerModel->setVolume(fPos);
 		break;
 	}
 	}
@@ -310,14 +301,14 @@ void CVideoPlayerDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (m_playerModel)
+	if (QmVideoPlayerModel)
 	{
-		double fPos = m_playerModel->getProgress();
+		VideoPlayerModel* playerModel = QmVideoPlayerModel;
+		double fPos = playerModel->getProgress();
 		m_videoProgressSlider.SetPos(fPos * m_videoProgressSlider.GetRangeMax());
 
-		int curTime = m_playerModel->getCurTime();
-		int totalTime = m_playerModel->getTotalTime();
-
+		int curTime = playerModel->getCurTime();
+		int totalTime = playerModel->getTotalTime();
 
 		m_curTime = CTimeSpan(curTime / 1000).Format("%H:%M:%S");
 		m_totalTime = CTimeSpan(totalTime / 1000).Format("%H:%M:%S");

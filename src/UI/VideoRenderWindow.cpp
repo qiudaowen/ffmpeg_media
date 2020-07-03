@@ -6,6 +6,7 @@
 #include "libmedia/FFmpegVideoTransformat.h"
 #include "libmedia/FFmpegUtils.h"
 #include "utils/LogTimeElapsed.h"
+#include <d3d11.h>
 
 
 #define DxRender 1
@@ -36,11 +37,18 @@ VideoRenderWindow::~VideoRenderWindow()
 
 void VideoRenderWindow::init(HWND hWnd)
 {
-	RECT rc;
-	::GetClientRect(m_hWnd, &rc);
+	SubclassWindow(hWnd);
 
+	RECT rc;
+	::GetClientRect(hWnd, &rc);
 	if (m_d3d11Device)
-		m_d3d11Device->createSwapChain(m_hWnd, rc.right - rc.left, rc.bottom - rc.top);
+		m_d3d11Device->createSwapChain(hWnd, rc.right - rc.left, rc.bottom - rc.top);
+}
+
+
+ID3D11Device* VideoRenderWindow::device() const
+{
+	return m_d3d11Device->device();
 }
 
 void VideoRenderWindow::OnPaint()
@@ -68,14 +76,13 @@ void VideoRenderWindow::onRender()
 	if (m_memorySurface)
 	{
 		m_memorySurface->resize(w, h);
-		AVFrameRef frame;
+		AVFrameRef frame = AVFrameRef::fromHWFrame(frame);
 		{
 			QmStdMutexLocker(m_lastFrameMutex);
 			frame = m_lastFrame;
 		}
 		m_transFormat->transformat(m_lastFrame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
 			, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface->format()), m_memorySurface->datas(), m_memorySurface->lineSizes());
-
 
 		HDC hDC = ::GetDC(m_hWnd);
 		::BitBlt(hDC, 0, 0, w, h, m_memorySurface->dcHandle(), 0, 0, SRCCOPY);
@@ -88,30 +95,50 @@ void VideoRenderWindow::onRender()
 			QmStdMutexLocker(m_lastFrameMutex);
 			frame = m_lastFrame;
 		}
+		m_d3d11Device->begin();
 
 		//LogTimeElapsed logRender(L"renderFrame");
+		do 
+		{
+			if (frame.isHWFormat())
+			{
+				ID3D11Texture2D* tex2D = (ID3D11Texture2D*)frame.data(0);
+				int subResouce = (int)frame.data(1);
 
-		int iVideoFormat = FFmpegUtils::ffmpegFormatToFourcc(frame.format());
-		switch (iVideoFormat)
-		{
-		case FOURCC_I420:
-		{
-			m_videoTex->updateYUV(frame.data(), frame.linesize(), frame.width(), frame.height());
-			break;
-		}
-		case FOURCC_NV12:
-		{
-			m_videoTex->updateNV12(frame.data(), frame.linesize(), frame.width(), frame.height());
-			break;
-		}
-		default:
-		{
-			//TODO
-			break;
-		}
-		}
-		m_d3d11Device->begin();
-		m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+				//TODO do not need copy to m_videoTex
+				if (m_videoTex->updateFromTexArray(tex2D, subResouce))
+				{
+					m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+				}
+				else
+				{
+					frame = AVFrameRef::fromHWFrame(frame);
+				}
+			}
+
+			//update load to gpu
+			int iVideoFormat = FFmpegUtils::ffmpegFormatToFourcc(frame.format());
+			switch (iVideoFormat)
+			{
+			case FOURCC_I420:
+			{
+				m_videoTex->updateYUV(frame.data(), frame.linesize(), frame.width(), frame.height());
+				break;
+			}
+			case FOURCC_NV12:
+			{
+				m_videoTex->updateNV12(frame.data(), frame.linesize(), frame.width(), frame.height());
+				break;
+			}
+			default:
+			{
+				//TODO
+				break;
+			}
+			}
+			m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+		} while (0);
+
 		m_d3d11Device->present();
 	}
 }
@@ -119,15 +146,21 @@ void VideoRenderWindow::onRender()
 bool VideoRenderWindow::OnVideoFrame(const AVFrameRef& frame)
 {
 	{
-		//TODO. 不需要拷贝到内存
-		AVFrameRef memFrame = AVFrameRef::fromHWFrame(frame);
 		QmStdMutexLocker(m_lastFrameMutex);
-		m_lastFrame = memFrame;
+		m_lastFrame = frame;
 	}
 	if (!m_bUpdating)
 	{
 		m_bUpdating = true;
 		std::weak_ptr<VideoRenderWindow> weakThis = shared_from_this();
+#if 0
+		auto pThis = weakThis.lock();
+			if (pThis)
+			{
+				pThis->m_bUpdating = false;
+				pThis->onRender();
+			}
+#else
 		MsgWnd::mainMsgWnd()->post([weakThis]() {
 			auto pThis = weakThis.lock();
 			if (pThis)
@@ -136,6 +169,7 @@ bool VideoRenderWindow::OnVideoFrame(const AVFrameRef& frame)
 				pThis->onRender();
 			}
 		});
+#endif
 	}
 	return true;
 }

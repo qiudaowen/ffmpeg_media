@@ -29,13 +29,13 @@ public:
 	bool createSwapChain(HWND hWnd, int w, int h);
 	
 	void begin();
-	//void drawTexture(ID3D11Texture2D* texture, const RECT& dstRect);
+	bool drawTexture(ID3D11Texture2D* texture, const RECT& dstRect);
 	void drawTexture(D3D11Texture* pTexture, const RECT& dstRect);
 	void present();
 	void resize(int w, int h);
 
 	ID3D11Device* device() const;
-	CComPtr<ID3D11DeviceContext> deviceContext() const;
+	ID3D11DeviceContext* deviceContext() const;
 protected:
 	void _resize(int w, int h);
 	bool initShaderResource();

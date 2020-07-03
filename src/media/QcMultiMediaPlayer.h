@@ -5,6 +5,7 @@
 class QcMultiMediaPlayerPrivate;
 class AVFrameRef;
 struct QsMediaInfo;
+struct AVBufferRef;
 
 class IMultiMediaNotify
 {
@@ -20,6 +21,7 @@ public:
     QcMultiMediaPlayer(IMultiMediaNotify* pNotify);
     ~QcMultiMediaPlayer();
 
+	void setHwDevice(AVBufferRef* device_ctx);
 	bool open(const char* pFile);
 	void play();
 	void pause();

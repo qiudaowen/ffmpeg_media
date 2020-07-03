@@ -25,6 +25,7 @@ public:
     QcMultiMediaPlayerPrivate(IMultiMediaNotify* pNotify);
     ~QcMultiMediaPlayerPrivate();
 
+	void setHwDevice(AVBufferRef* device_ctx);
 	bool open(const char* pFile);
 	void play();
 	void pause();
@@ -55,6 +56,7 @@ protected:
 	std::unique_ptr<FFmpegDemuxer> m_pDemuxer;
 	std::unique_ptr<FFmpegVideoDecoder> m_pVideoDecoder;
 	std::unique_ptr<FFmpegAudioDecoder> m_pAudioDecoder;
+	AVBufferRef * m_hw_device_ctx = nullptr;
     
     int m_playState = eReady;
 	int m_videoThreadState = eReady;

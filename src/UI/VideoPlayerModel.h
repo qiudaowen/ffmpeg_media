@@ -11,7 +11,9 @@ class QcMultiMediaPlayer;
 class FFmpegVideoTransformat;
 class QcAudioPlayer;
 class QcAudioTransformat;
+class FFmpegHwDevice;
 class D3D11Device;
+struct ID3D11Device;
 
 struct VideoFrameNotify
 {
@@ -24,7 +26,7 @@ public:
 	VideoPlayerModel();
 	~VideoPlayerModel();
 
-	void init(std::weak_ptr<VideoFrameNotify>&& notify);
+	void init(std::weak_ptr<VideoFrameNotify>&& notify, ID3D11Device* pHwDecodeDevcie = nullptr);
 	bool open(const std::wstring& fileName);
 	int getCurTime() const;
 	int getTotalTime() const;
@@ -40,7 +42,6 @@ public:
 	const std::vector<std::wstring>& fileList() const;
 protected:
     void openNext();
-	void onRender();
 protected:
 	virtual bool OnVideoFrame(const AVFrameRef& frame);
 	virtual bool OnAudioFrame(const AVFrameRef& frame);
@@ -48,6 +49,7 @@ protected:
 protected:
 	std::weak_ptr<VideoFrameNotify> m_videoNotify;
 
+	std::unique_ptr<FFmpegHwDevice> m_hwDevice;
 	std::unique_ptr<QcMultiMediaPlayer> m_player;
 	std::unique_ptr<QcAudioPlayer> m_audioPlayer;
 	std::unique_ptr<QcAudioTransformat> m_audioTransForPlayer;

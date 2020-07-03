@@ -24,17 +24,18 @@ public:
 	D3D11Texture(ID3D11Device* pDevice);
 	~D3D11Texture();
 
+	bool updateFromTexArray(ID3D11Texture2D* tex, int index);
 	bool updateYUV(const uint8_t* const datas[], const int dataSlice[], int w, int h);
 	bool updateNV12(const uint8_t* const datas[], const int dataSlice[], int w, int h);
 	bool updateRGB32(const uint8_t* data, int dataSlice, int w, int h, int dxgiFormat);
 	//TODO map
-
 
 	int width() const { return m_width; }
 	int height() const { return m_height; }
 	int format() const { return m_dxgiFormat; }
 	ID3D11ShaderResourceView* resourceView(int index);
 
+	static CComPtr<ID3D11ShaderResourceView> createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int subResouce, int format);
 	static CComPtr<ID3D11ShaderResourceView> createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int format);
 protected:
 	void createYUVTexture(int w, int h);

@@ -4,3 +4,4 @@
 /src/graphics/direct3d11/shaderInclude
 /.vs
 /out
+/src/test/*.user

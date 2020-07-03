@@ -50,8 +50,6 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 
 protected:
-	std::shared_ptr<VideoPlayerModel> m_playerModel;
-	std::shared_ptr<VideoRenderWindow> m_renderWindow;
 	QcComInit comInit;
 
 	bool m_bInitDialog = false;
