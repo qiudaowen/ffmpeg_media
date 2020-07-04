@@ -27,10 +27,12 @@ public:
 	~VideoPlayerModel();
 
 	void init(std::weak_ptr<VideoFrameNotify>&& notify, ID3D11Device* pHwDecodeDevcie = nullptr);
+	void setHwEnable(bool bEnable);
 	bool open(const std::wstring& fileName);
 	int getCurTime() const;
 	int getTotalTime() const;
 	void close();
+	void restart();
 
 	void trigger();
 	void setVolume(double fPos);

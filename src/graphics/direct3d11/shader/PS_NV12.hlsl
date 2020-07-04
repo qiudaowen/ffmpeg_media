@@ -12,8 +12,9 @@
 // Per-pixel color data passed through the pixel shader.
 struct PixelShaderInput
 {
-	min16float4 pos         : SV_POSITION;
-	min16float2 texCoord    : TEXCOORD0;
+	float4 pos         : SV_POSITION;
+	float2 texCoord    : TEXCOORD0;
+	float4 color : COLOR0;
 };
 
 Texture2D<float>  luminanceChannel   : t0;

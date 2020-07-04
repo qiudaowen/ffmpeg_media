@@ -3,7 +3,6 @@
 #include "VideoRenderWindow.h"
 #include "libmedia/FFmpegHwDevice.h"
 
-
 VideoPlayerApp::VideoPlayerApp()
 {
 	m_renderWindow = std::make_shared<VideoRenderWindow>();

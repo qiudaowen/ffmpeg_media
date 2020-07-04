@@ -5,28 +5,28 @@ FrameQueue::FrameQueue()
 
 }
 
-bool FrameQueue::push(const AVFrameRef& packet)
+bool FrameQueue::push(const AVFrameRef& frame)
 {
-	m_queue.push(packet);
+	m_queue.push(frame);
 	return true;
 }
 
-bool FrameQueue::pop(AVFrameRef& packet)
+bool FrameQueue::pop(AVFrameRef& frame)
 {
 	if (m_queue.size())
 	{
-		packet = m_queue.front();
+		frame = m_queue.front();
 		m_queue.pop();
 		return true;
 	}
 	return false;
 }
 
-bool FrameQueue::front(AVFrameRef& packet)
+bool FrameQueue::front(AVFrameRef& frame)
 {
 	if (m_queue.size())
 	{
-		packet = m_queue.front();
+		frame = m_queue.front();
 		return true;
 	}
 	return false;

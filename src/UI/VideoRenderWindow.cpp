@@ -26,8 +26,9 @@ VideoRenderWindow::VideoRenderWindow()
 	m_videoTex = std::make_shared<D3D11Texture>(m_d3d11Device->device());
 #else
 	m_memorySurface = std::make_shared<QcDIBSection>();
-	m_transFormat = std::make_unique<FFmpegVideoTransformat>();
 #endif
+
+	m_transFormat = std::make_unique<FFmpegVideoTransformat>();
 }
 
 VideoRenderWindow::~VideoRenderWindow()
@@ -37,18 +38,19 @@ VideoRenderWindow::~VideoRenderWindow()
 
 void VideoRenderWindow::init(HWND hWnd)
 {
-	SubclassWindow(hWnd);
-
 	RECT rc;
 	::GetClientRect(hWnd, &rc);
+
+	SubclassWindow(hWnd);
+
 	if (m_d3d11Device)
-		m_d3d11Device->createSwapChain(hWnd, rc.right - rc.left, rc.bottom - rc.top);
+		m_d3d11Device->createSwapChain(m_hWnd, rc.right - rc.left, rc.bottom - rc.top);
 }
 
 
 ID3D11Device* VideoRenderWindow::device() const
 {
-	return m_d3d11Device->device();
+	return m_d3d11Device ? m_d3d11Device->device() : NULL;
 }
 
 void VideoRenderWindow::OnPaint()
@@ -68,6 +70,13 @@ void VideoRenderWindow::OnSize(UINT nType, int cx, int cy)
 
 void VideoRenderWindow::onRender()
 {
+	static libtime::FpsTimer m_fps;
+	if (m_fps.tick())
+	{
+		std::wstring sLog = L"OnVideoFrame fps=" + std::to_wstring(m_fps.fps()) + L"\n";
+		OutputDebugStringW(sLog.c_str());
+	}
+
 	RECT rc;
 	::GetClientRect(m_hWnd, &rc);
 	int w = rc.right - rc.left;
@@ -76,12 +85,13 @@ void VideoRenderWindow::onRender()
 	if (m_memorySurface)
 	{
 		m_memorySurface->resize(w, h);
-		AVFrameRef frame = AVFrameRef::fromHWFrame(frame);
+		AVFrameRef frame;
 		{
 			QmStdMutexLocker(m_lastFrameMutex);
 			frame = m_lastFrame;
 		}
-		m_transFormat->transformat(m_lastFrame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
+		frame = AVFrameRef::fromHWFrame(frame);
+		m_transFormat->transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
 			, w, h, FFmpegUtils::fourccToFFmpegFormat(m_memorySurface->format()), m_memorySurface->datas(), m_memorySurface->lineSizes());
 
 		HDC hDC = ::GetDC(m_hWnd);
@@ -97,18 +107,22 @@ void VideoRenderWindow::onRender()
 		}
 		m_d3d11Device->begin();
 
-		//LogTimeElapsed logRender(L"renderFrame");
+
+		//LogTimeElapsed logRender(L"renderFrameD3d11");
 		do 
 		{
 			if (frame.isHWFormat())
 			{
 				ID3D11Texture2D* tex2D = (ID3D11Texture2D*)frame.data(0);
 				int subResouce = (int)frame.data(1);
+				int frameW = frame.width();
+				int frameH = frame.height();
 
 				//TODO do not need copy to m_videoTex
 				if (m_videoTex->updateFromTexArray(tex2D, subResouce))
 				{
 					m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+					break;
 				}
 				else
 				{
@@ -120,19 +134,33 @@ void VideoRenderWindow::onRender()
 			int iVideoFormat = FFmpegUtils::ffmpegFormatToFourcc(frame.format());
 			switch (iVideoFormat)
 			{
-			case FOURCC_I420:
-			{
-				m_videoTex->updateYUV(frame.data(), frame.linesize(), frame.width(), frame.height());
-				break;
-			}
+  			case FOURCC_I420:
+  			{
+  				m_videoTex->updateYUV(frame.data(), frame.linesize(), frame.width(), frame.height());
+  				break;
+  			}
 			case FOURCC_NV12:
 			{
 				m_videoTex->updateNV12(frame.data(), frame.linesize(), frame.width(), frame.height());
 				break;
 			}
+			case FOURCC_BGRA:
+			case FOURCC_RGBA:
+			case FOURCC_ABGR:
+			case FOURCC_ARGB:
+			{
+				m_videoTex->updateRGB32(frame.data(0), frame.linesize(0), frame.width(), frame.height());
+				break;
+			}
 			default:
 			{
-				//TODO
+				m_videoTex->lockRGB32(frame.width(), frame.height(), 0, [&](uint8_t* dstData, int dataSlice) {
+					uint8_t * const dstDatas[] = { dstData };
+					int dstSlice[] = { dataSlice };
+
+					m_transFormat->transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
+						, frame.width(), frame.height(), FFmpegUtils::fourccToFFmpegFormat(FOURCC_BGRA), dstDatas, dstSlice);
+				});
 				break;
 			}
 			}

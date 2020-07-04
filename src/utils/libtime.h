@@ -45,7 +45,7 @@ namespace libtime
 			m_fps = 0.0;
 			m_startTime = steady_clock::now();
 		}
-		uint32_t tick()
+		bool tick()
 		{
 			++m_frames;
 			auto now = steady_clock::now();
@@ -56,8 +56,9 @@ namespace libtime
 				m_fps = m_frames * 1000.0/delta;
 				m_startTime = now;
 				m_frames = 0;
+				return true;
 			}
-			return delta;
+			return false;
 		}
 		double fps() const
 		{

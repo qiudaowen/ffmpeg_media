@@ -16,9 +16,10 @@
 #define IDC_LIST_VIDEO                  1007
 #define IDC_VOL_TEXT                    1008
 #define IDC_SHOW_LIST                   1009
-#define IDC_VOL_TEXT2                   1010
 #define IDC_TOTALTIME                   1010
 #define IDC_PLAYTIME                    1011
+#define IDC_CHECK1                      1012
+#define IDC_HW_ENABLE                   1012
 
 // Next default values for new objects
 // 
@@ -26,7 +27,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1009
+#define _APS_NEXT_CONTROL_VALUE         1013
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

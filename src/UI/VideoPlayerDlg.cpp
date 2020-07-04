@@ -60,6 +60,7 @@ CVideoPlayerDlg::CVideoPlayerDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_VIDEOPLAYER_DIALOG, pParent)
 	, m_curTime(_T(""))
 	, m_totalTime(_T(""))
+	, m_bHwEnable(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -73,6 +74,7 @@ void CVideoPlayerDlg::DoDataExchange(CDataExchange* pDX)
 	// DDX_Control(pDX, IDC_VIDEOWND, *m_renderWindow.get());
 	DDX_Text(pDX, IDC_PLAYTIME, m_curTime);
 	DDX_Text(pDX, IDC_TOTALTIME, m_totalTime);
+	DDX_Check(pDX, IDC_HW_ENABLE, m_bHwEnable);
 }
 
 BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
@@ -90,6 +92,7 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_LBN_SELCHANGE(IDC_LIST_VIDEO, &CVideoPlayerDlg::OnLbnSelchangeListVideo)
 	ON_BN_CLICKED(IDC_ADD_VIDEOFILE, &CVideoPlayerDlg::OnBnClickedButtonAdd)
 	ON_BN_CLICKED(IDC_SHOW_LIST, &CVideoPlayerDlg::OnBnClickedButtonShowList)
+	ON_BN_CLICKED(IDC_HW_ENABLE, &CVideoPlayerDlg::OnBnClickedHwEnable)
 END_MESSAGE_MAP()
 
 
@@ -128,18 +131,20 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	MsgWnd::mainMsgWnd()->post([this]() {
 		m_videoProgressSlider.SetRange(0, 10000, TRUE);
 		m_volSliderCtrl.SetRange(0, 10000, TRUE);
+		m_volSliderCtrl.SetPos(10000);
 
 		adjustControlPos();
 		SetTimer(QmPlayTimerID, 500, NULL);
+		UpdateData(FALSE);
 		UpdateWindow();
 	});
 
 	HWND hWnd = ::GetDlgItem(m_hWnd, IDC_VIDEOWND);
 	QmVideoApp->init(hWnd);
+	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
 
 	DragAcceptFiles(TRUE);
-
-
+	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -345,9 +350,12 @@ void CVideoPlayerDlg::adjustControlPos()
 	GetClientRect(&rect);
 
 	CRect videoRect = getDlgItemRect(IDC_VIDEOWND);
+
 	CRect playTimeRect = getDlgItemRect(IDC_PLAYTIME);
 	CRect sliderVideoRect = getDlgItemRect(IDC_SLIDER_VIDEO);
 	CRect totalTimeRect = getDlgItemRect(IDC_TOTALTIME);
+	//底部栏
+	CRect hwEnableRect = getDlgItemRect(IDC_HW_ENABLE);
 	CRect playBtnRect = getDlgItemRect(IDC_PLAY_PAUSE);
 	CRect volumeTextRect = getDlgItemRect(IDC_VOL_TEXT);
 	CRect sliderVolumeRect = getDlgItemRect(IDC_SLIDER_VOLUME);
@@ -374,9 +382,13 @@ void CVideoPlayerDlg::adjustControlPos()
 	if (m_videoFileList.IsWindowVisible())
 		setDlgItemRect(IDC_LIST_VIDEO, totalW - videoFileListW, 0, videoFileListW, totalH - bottomItemH);
 
-	int bottomItemsTotalW = playBtnRect.Width() + volumeTextRect.Width() + sliderVolumeRect.Width() + showVideoListBtnRect.Width() + addVideoFileBtnRect.Width();
+	//底部栏
+	int bottomItemsTotalW = hwEnableRect.Width() +  playBtnRect.Width() + volumeTextRect.Width() + sliderVolumeRect.Width() + showVideoListBtnRect.Width() + addVideoFileBtnRect.Width();
 	int halfSpaceW = (totalW - bottomItemsTotalW) / 2;
 	int bottomItemX = halfSpaceW;
+	moveDlgItem(IDC_HW_ENABLE, bottomItemX, bottomItemY);
+	bottomItemX += hwEnableRect.Width();
+
 	moveDlgItem(IDC_PLAY_PAUSE, bottomItemX, bottomItemY);
 	bottomItemX += playBtnRect.Width();
 	moveDlgItem(IDC_VOL_TEXT,   bottomItemX, bottomItemY);
@@ -390,3 +402,10 @@ void CVideoPlayerDlg::adjustControlPos()
 	moveDlgItem(IDC_SHOW_LIST, bottomItemX, bottomItemY);
 }
 
+
+
+void CVideoPlayerDlg::OnBnClickedHwEnable()
+{
+	UpdateData();
+	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
+}

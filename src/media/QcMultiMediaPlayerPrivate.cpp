@@ -9,7 +9,8 @@ extern "C"{
 #include "FFmpegVideoDecoder.h"
 #include "FFmpegAudioDecoder.h"
 #include "FFmpegUtils.h"
-
+#include "utils/libtime.h"
+#include <string>
 #include <windows.h>
 
 
@@ -30,6 +31,7 @@ QcMultiMediaPlayerPrivate::QcMultiMediaPlayerPrivate(IMultiMediaNotify* pNotify)
 QcMultiMediaPlayerPrivate::~QcMultiMediaPlayerPrivate()
 {
     close();
+	setHwDevice(nullptr);
 }
 
 void QcMultiMediaPlayerPrivate::setHwDevice(AVBufferRef* device_ctx)
@@ -79,7 +81,6 @@ bool QcMultiMediaPlayerPrivate::close()
 		m_demuxerThread.join();
 
 	m_pVideoDecoder->close();
-	av_buffer_unref(&m_hw_device_ctx);
 
 	m_pAudioDecoder->close();
 	m_pDemuxer = nullptr;
@@ -339,27 +340,29 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 		{
 			int iVideoQueueSize = 0;
 			{
-				QmStdMutexLocker(m_videoQueue.mutex());
-				iVideoQueueSize = m_videoQueue.size();
-				if (iVideoQueueSize > 0)
+				AVFrameRef playFrame;
+				bool bPlay = false;
 				{
-					AVFrameRef frame;
-					if (m_pNotify)
+					QmStdMutexLocker(m_videoQueue.mutex());
+					iVideoQueueSize = m_videoQueue.size();
+					if (iVideoQueueSize > 0 && m_pNotify)
 					{
-                        //¶ªÖ¡
-                        while (m_videoQueue.front(frame) && diffToCurrentTime(frame) < 5)
-                        {
-                            --iVideoQueueSize;
-                            m_iVideoCurTime = frame.ptsMsTime();
-                            m_videoQueue.pop(frame);
-                        }
-                        if (frame)
-                        {
-                            m_pNotify->OnVideoFrame(frame);
-                        }
+						//¶ªÖ¡
+						while (m_videoQueue.front(playFrame) && diffToCurrentTime(playFrame) < 5)
+						{
+							--iVideoQueueSize;
+							m_iVideoCurTime = playFrame.ptsMsTime();
+							m_videoQueue.pop(playFrame);
+							bPlay = true;
+						}
 					}
 				}
+				if (bPlay && m_pNotify)
+				{
+					m_pNotify->OnVideoFrame(playFrame);
+				}
 			}
+
 			if (iVideoQueueSize < 3)
 			{
 				AVPacketPtr pkt;
@@ -424,22 +427,29 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 		{
 			int iQueueSize = 0;
 			{
-				QmStdMutexLocker(m_audioQueue.mutex());
-				iQueueSize = m_audioQueue.size();
-				if (iQueueSize > 0)
+				AVFrameRef playFrame;
+				bool bPlay = false;
 				{
-					AVFrameRef frame;
-					if (m_pNotify && m_audioQueue.front(frame) && diffToCurrentTime(frame) < 5)
+					QmStdMutexLocker(m_audioQueue.mutex());
+					iQueueSize = m_audioQueue.size();
+					if (iQueueSize > 0 && m_pNotify)
 					{
-						if (m_pNotify->OnAudioFrame(frame))
+						if (m_audioQueue.front(playFrame) && diffToCurrentTime(playFrame) < 5)
 						{
 							--iQueueSize;
-							m_iAudioCurTime = frame.ptsMsTime();
-							m_audioQueue.pop(frame);
+							m_iAudioCurTime = playFrame.ptsMsTime();
+							m_audioQueue.pop(playFrame);
+							bPlay = true;
 						}
 					}
 				}
+				if (bPlay && m_pNotify)
+				{
+					m_pNotify->OnAudioFrame(playFrame);
+				}
 			}
+
+
 			if (iQueueSize < 3)
 			{
 				AVPacketPtr pkt;

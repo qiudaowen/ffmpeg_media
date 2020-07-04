@@ -75,17 +75,17 @@ void FFmpegVideoDecoder::openCodec(const AVCodecParameters *par, int srcW, int s
 								{
 									break;
 								}
-								pCodecCtx->hw_frames_ctx = av_buffer_ref(new_frames_ctx);
+								auto fctx = (AVHWFramesContext*)new_frames_ctx->data;
 
-								auto fctx = (AVHWFramesContext*)pCodecCtx->hw_frames_ctx->data;
-								auto hwctx = static_cast<AVD3D11VAFramesContext*>(fctx->hwctx);
-								hwctx->BindFlags |= D3D11_BIND_SHADER_RESOURCE;
-								auto ret = av_hwframe_ctx_init(pCodecCtx->hw_frames_ctx);
+								auto d3d11HFrameCtx = static_cast<AVD3D11VAFramesContext*>(fctx->hwctx);
+								d3d11HFrameCtx->BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+								auto ret = av_hwframe_ctx_init(new_frames_ctx);
 								if (ret < 0)
 								{
 									char buffer[AV_ERROR_MAX_STRING_SIZE] = { 0 };
 									av_strerror(ret, buffer, AV_ERROR_MAX_STRING_SIZE);
 								}
+								pCodecCtx->hw_frames_ctx = new_frames_ctx;
 							}
 							return *p;
 						}

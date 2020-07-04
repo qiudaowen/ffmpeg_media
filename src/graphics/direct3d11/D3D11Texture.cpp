@@ -5,10 +5,15 @@
 #include "utils/libtime.h"
 #include <utils/LogTimeElapsed.h>
 
-D3D11Texture::D3D11Texture(ID3D11Device* pDevice)
+D3D11Texture::D3D11Texture(ID3D11Device* pDevice, ID3D11DeviceContext* deviceCtx)
 	: m_d3d11Device(pDevice)
+	, m_d3d11DeviceContext(deviceCtx)
 {
-
+	if (!m_d3d11DeviceContext)
+	{
+		m_d3d11DeviceContext = nullptr;
+		m_d3d11Device->GetImmediateContext(&m_d3d11DeviceContext);
+	}
 }
 
 D3D11Texture::~D3D11Texture()
@@ -96,10 +101,8 @@ bool D3D11Texture::updateFromTexArray(ID3D11Texture2D* tex, int index)
 	if (m_texturePlanes[1])
 		return false;
 
-	CComPtr<ID3D11DeviceContext> d3dContext;
-	m_d3d11Device->GetImmediateContext(&d3dContext);
 
-	d3dContext->CopySubresourceRegion(m_texturePlanes[0], 0,0,0,0, tex, index, NULL);
+	m_d3d11DeviceContext->CopySubresourceRegion(m_texturePlanes[0], 0,0,0,0, tex, index, NULL);
 	return true;
 }
 
@@ -149,31 +152,29 @@ bool D3D11Texture::updateYUV(const uint8_t* const datas[], const int dataSlice[]
 	if (m_dxgiFormat == DXGI_FORMAT_UNKNOWN)
 		return false;
 
-	//LogTimeElapsed log(L"updateYUV");
-
-	CComPtr<ID3D11DeviceContext> d3dContext;
-	m_d3d11Device->GetImmediateContext(&d3dContext);
-
+	D3D11_MAPPED_SUBRESOURCE res[3];
 	{
-		D3D11_MAPPED_SUBRESOURCE res;
-		auto const hr = d3dContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-		if (FAILED(hr))
-			return false;
-		video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, datas[0], dataSlice[0], w, h);
+		for (int i = 0; i < 3; ++i)
 		{
-			d3dContext->Unmap(m_texturePlanes[0], 0);
+			auto const hr = m_d3d11DeviceContext->Map(m_texturePlanes[i], 0, D3D11_MAP_WRITE_DISCARD, 0, &res[i]);
+			if (FAILED(hr))
+			{
+				while (--i >= 0)
+				{
+					m_d3d11DeviceContext->Unmap(m_texturePlanes[i], 0);
+				}
+				return false;
+			}	
 		}
-	}
 
-	for (int i = 1; i < 3; ++i)
-	{
-		D3D11_MAPPED_SUBRESOURCE res;
+		video::CopyPlane((uint8_t*)res[0].pData, (int)res[0].RowPitch, datas[0], dataSlice[0], w, h);
+		video::CopyPlane((uint8_t*)res[1].pData, (int)res[1].RowPitch, datas[1], dataSlice[1], w/2, h/2);
+		video::CopyPlane((uint8_t*)res[2].pData, (int)res[2].RowPitch, datas[2], dataSlice[2], w/2, h/2);
 
-		auto const hr = d3dContext->Map(m_texturePlanes[i], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
-		if (FAILED(hr))
-			return false;
-		video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, datas[i], dataSlice[i], w / 2, h / 2);
-		d3dContext->Unmap(m_texturePlanes[i], 0);
+		for (int i = 0; i < 3; ++i)
+		{
+			m_d3d11DeviceContext->Unmap(m_texturePlanes[i], 0);
+		}
 	}
 	return true;
 }
@@ -226,35 +227,33 @@ bool D3D11Texture::updateNV12(const uint8_t* const datas[], const int dataSlice[
 	if (m_dxgiFormat == DXGI_FORMAT_UNKNOWN)
 		return false;
 
-	CComPtr<ID3D11DeviceContext> d3dContext;
-	m_d3d11Device->GetImmediateContext(&d3dContext);
 	if (m_texturePlanes[1])
 	{
 			D3D11_MAPPED_SUBRESOURCE res;
-			HRESULT hr = d3dContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+			HRESULT hr = m_d3d11DeviceContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 			if (FAILED(hr))
 				return false;
 			video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, datas[0], dataSlice[0], w, h);
-			d3dContext->Unmap(m_texturePlanes[0], 0);
+			m_d3d11DeviceContext->Unmap(m_texturePlanes[0], 0);
 
 
-			hr = d3dContext->Map(m_texturePlanes[1], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+			hr = m_d3d11DeviceContext->Map(m_texturePlanes[1], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 			if (FAILED(hr))
 				return false;
 			video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, datas[1], dataSlice[1], w/2, h/2);
-			d3dContext->Unmap(m_texturePlanes[1], 0);
+			m_d3d11DeviceContext->Unmap(m_texturePlanes[1], 0);
 	}
 	else
 	{
 		D3D11_MAPPED_SUBRESOURCE res;
-		auto const hr = d3dContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+		auto const hr = m_d3d11DeviceContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 		if (FAILED(hr))
 			return false;
 
 		video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, datas[0], dataSlice[0], w, h);
-
 		video::CopyPlane(((uint8_t*)res.pData) + h * res.RowPitch, (int)res.RowPitch, datas[1], dataSlice[1], w, h/2);
-		d3dContext->Unmap(m_texturePlanes[0], 0);
+
+		m_d3d11DeviceContext->Unmap(m_texturePlanes[0], 0);
 	}
 	return true;
 }
@@ -280,8 +279,17 @@ void D3D11Texture::createRGBTexture(int width, int height, int dxgiFormat)
 	m_dxgiFormat = dxgiFormat;
 }
 
-bool D3D11Texture::updateRGB32(const uint8_t* data, int dataSlice, int w, int h, int dxgiFormat)
+bool D3D11Texture::updateRGB32(const uint8_t* srcData, int srcSlice, int w, int h, int dxgiFormat)
 {
+	return lockRGB32(w, h, dxgiFormat, [&](uint8_t* dstData, int dstSlice){
+		video::CopyPlane(dstData, dstSlice, srcData, srcSlice, w, h);
+	});
+}
+
+bool D3D11Texture::lockRGB32(int w, int h, int dxgiFormat, std::function<void(uint8_t* dstData, int dataSlice)> cb)
+{
+	if (dxgiFormat == 0)
+		dxgiFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
 	if (m_dxgiFormat != dxgiFormat || w != m_width || h != m_height)
 	{
 		clear();
@@ -290,15 +298,13 @@ bool D3D11Texture::updateRGB32(const uint8_t* data, int dataSlice, int w, int h,
 	if (m_dxgiFormat == DXGI_FORMAT_UNKNOWN)
 		return false;
 
-	CComPtr<ID3D11DeviceContext> d3dContext;
-	m_d3d11Device->GetImmediateContext(&d3dContext);
-
 	D3D11_MAPPED_SUBRESOURCE res;
-	auto const hr = d3dContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
+	auto const hr = m_d3d11DeviceContext->Map(m_texturePlanes[0], 0, D3D11_MAP_WRITE_DISCARD, 0, &res);
 	if (FAILED(hr))
 		return false;
-	video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, data, dataSlice, w, h);
-	d3dContext->Unmap(m_texturePlanes[0], 0);
 
-	return true;
+	cb((uint8_t*)res.pData, (int)res.RowPitch);
+	//video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, data, dataSlice, w, h);
+
+	m_d3d11DeviceContext->Unmap(m_texturePlanes[0], 0);
 }

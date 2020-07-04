@@ -5,6 +5,16 @@
 #include "VertexBuffers.h"
 #include "D3D11Texture.h"
 
+static CComPtr<IDXGIAdapter1> getDefaultAdapter()
+{
+	CComPtr<IDXGIFactory1> dxgiFactory;
+	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
+
+	CComPtr<IDXGIAdapter1> adapter;
+	dxgiFactory->EnumAdapters1(0, &adapter);
+
+	return adapter;
+}
 
 static CComPtr<IDXGIAdapter1> chooseAdapterByLUID(uint64_t luid)
 {
@@ -24,6 +34,43 @@ static CComPtr<IDXGIAdapter1> chooseAdapterByLUID(uint64_t luid)
 	return nullptr;
 }
 
+static void FillSwapChainDesc(HWND hWnd, UINT w, UINT h, DXGI_SWAP_CHAIN_DESC *out)
+{
+	ZeroMemory(out, sizeof(*out));
+	out->BufferCount = 3;
+	out->BufferDesc.Width = w;
+	out->BufferDesc.Height = h;
+	out->BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	out->BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	out->SampleDesc.Count = 1;
+	out->OutputWindow = hWnd;
+	out->Windowed = TRUE;
+	out->Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	//out->Flags = 512; // DXGI_SWAP_CHAIN_FLAG_YUV_VIDEO;
+
+#if 0
+	bool isWin10OrGreater = false;
+	HMODULE hKernel32 = GetModuleHandle(TEXT("kernel32.dll"));
+	if (hKernel32 != NULL)
+		isWin10OrGreater = GetProcAddress(hKernel32, "GetSystemCpuSetInformation") != NULL;
+	if (isWin10OrGreater)
+		out->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	else
+	{
+		bool isWin80OrGreater = false;
+		if (hKernel32 != NULL)
+			isWin80OrGreater = GetProcAddress(hKernel32, "CheckTokenCapability") != NULL;
+		if (isWin80OrGreater)
+			out->SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+		else
+		{
+			out->SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+			out->BufferCount = 1;
+		}
+	}
+#endif
+}
+
 static HRESULT createDevice(uint64_t adapterLUID, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
 {
 	CComPtr<IDXGIAdapter1> adapter = chooseAdapterByLUID(adapterLUID);
@@ -35,7 +82,7 @@ static HRESULT createDevice(uint64_t adapterLUID, ID3D11Device** ppDevice, ID3D1
 #ifdef _DEBUG
 		D3D11_CREATE_DEVICE_DEBUG |
 #endif // _DEBUG
-		D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT,
+		D3D11_CREATE_DEVICE_BGRA_SUPPORT,
 		nullptr, 0, // Highest available feature level
 		D3D11_SDK_VERSION,
 		ppDevice,
@@ -87,15 +134,7 @@ bool D3D11Device::createSwapChain(HWND hWnd, int w, int h)
 	m_swapChain = nullptr;
 
 	DXGI_SWAP_CHAIN_DESC sc_desc;
-	ZeroMemory(&sc_desc, sizeof(sc_desc));
-	sc_desc.BufferCount = 2;
-	sc_desc.BufferDesc.Width = w;
-	sc_desc.BufferDesc.Height = h;
-	sc_desc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	sc_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sc_desc.SampleDesc.Count = 1;
-	sc_desc.OutputWindow = hWnd;
-	sc_desc.Windowed = TRUE;
+	FillSwapChainDesc(hWnd, w, h, &sc_desc);
 
 	CComPtr<IDXGIFactory1> dxgiFactory;
 	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
@@ -107,9 +146,17 @@ bool D3D11Device::createSwapChain(HWND hWnd, int w, int h)
 
 	{
 		m_samplerLinear = nullptr;
-		D3D11_SAMPLER_DESC desc = CD3D11_SAMPLER_DESC(CD3D11_DEFAULT());
+		D3D11_SAMPLER_DESC sampDesc;
+		ZeroMemory(&sampDesc, sizeof(sampDesc));
+		sampDesc.Filter = D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+		sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+		sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		sampDesc.MinLOD = 0;
+		sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
 		hr = m_d3d11Device->CreateSamplerState(
-			&desc,
+			&sampDesc,
 			&m_samplerLinear
 		);
 		if (FAILED(hr))
@@ -140,6 +187,7 @@ bool D3D11Device::initShaderResource()
 	m_shaderResource = std::make_shared<ShaderResource>();
 	if (!m_shaderResource->init(m_d3d11Device))
 	{
+		DebugBreak();
 		m_shaderResource = nullptr;
 		return false;
 	}
@@ -159,11 +207,10 @@ bool D3D11Device::initVertexBuffer()
 
 void D3D11Device::begin()
 {
-	FLOAT blendFactor[4] = { 0.f, 0.f, 0.f, 0.f };
-	m_d3d11DeviceContext->OMSetBlendState(nullptr, blendFactor, 0xffffffff);
-
-	ID3D11RenderTargetView* targetView = m_renderTargetView;
-	m_d3d11DeviceContext->OMSetRenderTargets(1, &targetView, nullptr);
+	DXGI_SWAP_CHAIN_DESC SwapChainDesc;
+	auto hr = m_swapChain->GetDesc(&SwapChainDesc);
+	if (hr == S_OK && SwapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD || SwapChainDesc.SwapEffect == DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL)
+		makeRenderTargetView();
 }
 
 void D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
@@ -230,9 +277,7 @@ bool D3D11Device::drawTexture(ID3D11Texture2D* texture, const RECT& dstRect)
 		break;
 	}
 	case DXGI_FORMAT_B8G8R8A8_UNORM:
-	case DXGI_FORMAT_B8G8R8X8_UNORM:
 	case DXGI_FORMAT_R8G8B8A8_UNORM:
-	case DXGI_FORMAT_R8G8B8A8_SNORM:
 	{
 		CComPtr<ID3D11ShaderResourceView> resViews[1];
 		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, desc.Format);
@@ -299,9 +344,17 @@ void D3D11Device::makeRenderTargetView()
 		return;
 	}
 
+	D3D11_TEXTURE2D_DESC texDesc;
+	BackBuffer->GetDesc(&texDesc);
+
+	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
+	memset(&renderTargetViewDesc, 0, sizeof(renderTargetViewDesc));
+	renderTargetViewDesc.Format = texDesc.Format;
+	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
 	// Create a render target view
 	m_renderTargetView = nullptr;
-	hr = m_d3d11Device->CreateRenderTargetView(BackBuffer, nullptr, &m_renderTargetView);
+	hr = m_d3d11Device->CreateRenderTargetView(BackBuffer, &renderTargetViewDesc, &m_renderTargetView);
 	BackBuffer->Release();
 	if (FAILED(hr))
 	{
@@ -333,27 +386,31 @@ void D3D11Device::_draw(ID3D11PixelShader* psShader, ID3D11ShaderResourceView** 
 	m_d3d11DeviceContext->VSSetShader(m_shaderResource->vertexShader(), nullptr, 0);
 	m_d3d11DeviceContext->PSSetShader(psShader, nullptr, 0);
 
-
-	auto PointToNdc = [](int x, int y, float z, int targetWidth, int targetHeight) -> XMFLOAT3
+// 	static RECT lastRect = { 0 };
+// 	if (memcmp(&lastRect, &dstRect, sizeof(RECT)) != 0)
 	{
-		float X = 2.0f * (float)x / targetWidth - 1.0f;
-		float Y = 1.0f - 2.0f * (float)y / targetHeight;
-		float Z = z;
-		return XMFLOAT3(X, Y, Z);
-	};
-	VertexIn vertrices[] =
-	{
-		{ PointToNdc(dstRect.left, dstRect.top, 0, m_width, m_height), XMFLOAT2(0, 0), 0xffffffff },
-		{ PointToNdc(dstRect.right, dstRect.top, 0, m_width, m_height), XMFLOAT2(1, 0), 0xffffffff },
-		{ PointToNdc(dstRect.left, dstRect.bottom, 0, m_width, m_height), XMFLOAT2(0, 1), 0xffffffff },
-		{ PointToNdc(dstRect.right, dstRect.bottom, 0, m_width, m_height), XMFLOAT2(1, 1), 0xffffffff },
-	};
-	UINT stride = sizeof(VertexIn);
-	UINT offset = 0;
-	CComPtr<ID3D11Buffer> vb = m_vertexBuffers->updateVertex(m_d3d11Device, (const uint8_t*)vertrices, sizeof(vertrices));
-	ID3D11Buffer* pVBBuffer = vb;
-	m_d3d11DeviceContext->IASetVertexBuffers(0, 1, &pVBBuffer, &stride, &offset);
-	m_d3d11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+		//lastRect = dstRect;
+		auto PointToNdc = [](int x, int y, float z, int targetWidth, int targetHeight) -> XMFLOAT3
+		{
+			float X = 2.0f * (float)x / targetWidth - 1.0f;
+			float Y = 1.0f - 2.0f * (float)y / targetHeight;
+			float Z = z;
+			return XMFLOAT3(X, Y, Z);
+		};
+		VertexIn vertrices[] =
+		{
+			{ PointToNdc(dstRect.left, dstRect.top, 0, m_width, m_height), XMFLOAT2(0, 0), 0xffffffff },
+			{ PointToNdc(dstRect.right, dstRect.top, 0, m_width, m_height), XMFLOAT2(1, 0), 0xffffffff },
+			{ PointToNdc(dstRect.left, dstRect.bottom, 0, m_width, m_height), XMFLOAT2(0, 1), 0xffffffff },
+			{ PointToNdc(dstRect.right, dstRect.bottom, 0, m_width, m_height), XMFLOAT2(1, 1), 0xffffffff },
+		};
+		UINT stride = sizeof(VertexIn);
+		UINT offset = 0;
+		CComPtr<ID3D11Buffer> vb = m_vertexBuffers->updateVertex(m_d3d11Device, (const uint8_t*)vertrices, sizeof(vertrices));
+		ID3D11Buffer* pVBBuffer = vb;
+		m_d3d11DeviceContext->IASetVertexBuffers(0, 1, &pVBBuffer, &stride, &offset);
+		m_d3d11DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	}
 
 	m_d3d11DeviceContext->Draw(4, 0);
 }

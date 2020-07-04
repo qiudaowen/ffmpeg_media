@@ -10,25 +10,33 @@ struct PixelShaderInput
 	float4 color : COLOR0;
 };
 
+// Derived from https://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
+// Section: Converting 8-bit YUV to RGB888
+static const float3x3 YUVtoRGBCoeffMatrix =
+{
+	1.164383f,  1.164383f, 1.164383f,
+	0.000000f, -0.391762f, 2.017232f,
+	1.596027f, -0.812968f, 0.000000f
+};
+
+float3 ConvertYUVtoRGB(float3 yuv)
+{
+	// Derived from https://msdn.microsoft.com/en-us/library/windows/desktop/dd206750(v=vs.85).aspx
+	// Section: Converting 8-bit YUV to RGB888
+
+	// These values are calculated from (16 / 255) and (128 / 255)
+	yuv -= float3(0.062745f, 0.501960f, 0.501960f);
+	yuv = mul(yuv, YUVtoRGBCoeffMatrix);
+
+	return saturate(yuv);
+}
+
 float4 main(PixelShaderInput input) : SV_TARGET
 {
-	const float3 offset = {0.0, -0.501960814, -0.501960814};
-	const float3 Rcoeff = {1.0000,  0.0000,  1.4020};
-	const float3 Gcoeff = {1.0000, -0.3441, -0.7141};
-	const float3 Bcoeff = {1.0000,  1.7720,  0.0000};
-
-	float4 Output;
-
 	float3 yuv;
 	yuv.x = theTextureY.Sample(theSampler, input.tex).r;
 	yuv.y = theTextureU.Sample(theSampler, input.tex).r;
 	yuv.z = theTextureV.Sample(theSampler, input.tex).r;
 
-	yuv += offset;
-	Output.r = dot(yuv, Rcoeff);
-	Output.g = dot(yuv, Gcoeff);
-	Output.b = dot(yuv, Bcoeff);
-	Output.a = 1.0f;
-
-	return Output * input.color;
+	return float4(ConvertYUVtoRGB(yuv), 1.f);
 }

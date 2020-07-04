@@ -27,7 +27,26 @@ void VideoPlayerModel::init(std::weak_ptr<VideoFrameNotify>&& notify, ID3D11Devi
 {
 	m_videoNotify = std::move(notify);
 	m_hwDevice->attach(pHwDecodeDevcie);
-	m_player->setHwDevice(m_hwDevice->hwDevice().get());
+}
+
+void VideoPlayerModel::setHwEnable(bool bEnable)
+{
+	m_player->setHwDevice(bEnable ? m_hwDevice->hwDevice().get() : nullptr);
+	auto mediaInfo = m_player->getMediaInfo();
+	if (mediaInfo)
+	{
+		restart();
+	}
+}
+
+void VideoPlayerModel::restart()
+{
+	bool isPlaying = m_player->isPlaying();
+	int curTime = getCurTime();
+	open(m_currentPlayFile);
+	m_player->seek(curTime);
+	if (!isPlaying)
+		m_player->pause();
 }
 
 bool VideoPlayerModel::open(const std::wstring& fileName)

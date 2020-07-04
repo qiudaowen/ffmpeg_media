@@ -48,6 +48,7 @@ public:
 	afx_msg void OnBnClickedButtonShowList();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnBnClickedHwEnable();
 
 protected:
 	QcComInit comInit;
@@ -65,4 +66,5 @@ public:
 	CNiceSliderCtrl m_volSliderCtrl;
 	CString m_curTime;
 	CString m_totalTime;
+	BOOL m_bHwEnable;
 };
