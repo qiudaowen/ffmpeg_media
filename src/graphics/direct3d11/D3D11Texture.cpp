@@ -48,6 +48,30 @@ CComPtr<ID3D11ShaderResourceView> createTex2DResourceView(ID3D11Device* device, 
 	return resView;
 }
 
+CComPtr<ID3D11ShaderResourceView> D3D11Texture::createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int subResouce, int format)
+{
+	CComPtr<ID3D11ShaderResourceView> resView;
+	D3D11_SHADER_RESOURCE_VIEW_DESC luminancePlaneDesc = CD3D11_SHADER_RESOURCE_VIEW_DESC(
+		texture,
+		D3D11_SRV_DIMENSION_TEXTURE2DARRAY,
+		(DXGI_FORMAT)format
+	);
+	luminancePlaneDesc.Texture2DArray.MipLevels = -1;
+	luminancePlaneDesc.Texture2DArray.ArraySize = 1;
+	luminancePlaneDesc.Texture2DArray.FirstArraySlice = subResouce;
+
+	HRESULT hr = device->CreateShaderResourceView(
+		texture,
+		&luminancePlaneDesc,
+		&resView
+	);
+	if (FAILED(hr))
+	{
+		return nullptr;
+	}
+	return resView;
+}
+
 CComPtr<ID3D11ShaderResourceView> D3D11Texture::createTex2DResourceView(ID3D11Device* device, ID3D11Texture2D* texture, int format)
 {
 	CComPtr<ID3D11ShaderResourceView> resView;

@@ -132,15 +132,16 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 		m_videoProgressSlider.SetRange(0, 10000, TRUE);
 		m_volSliderCtrl.SetRange(0, 10000, TRUE);
 		m_volSliderCtrl.SetPos(10000);
-
 		adjustControlPos();
+		QmVideoRenderWindow->ShowWindow(SW_SHOW);
+
 		SetTimer(QmPlayTimerID, 500, NULL);
 		UpdateData(FALSE);
 		UpdateWindow();
 	});
 
-	HWND hWnd = ::GetDlgItem(m_hWnd, IDC_VIDEOWND);
-	QmVideoApp->init(hWnd);
+	QmVideoRenderWindow->init(0, 0, 640, 480, m_hWnd);
+	QmVideoApp->init();
 	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
 
 	DragAcceptFiles(TRUE);
@@ -349,8 +350,6 @@ void CVideoPlayerDlg::adjustControlPos()
 	CRect rect;
 	GetClientRect(&rect);
 
-	CRect videoRect = getDlgItemRect(IDC_VIDEOWND);
-
 	CRect playTimeRect = getDlgItemRect(IDC_PLAYTIME);
 	CRect sliderVideoRect = getDlgItemRect(IDC_SLIDER_VIDEO);
 	CRect totalTimeRect = getDlgItemRect(IDC_TOTALTIME);
@@ -374,7 +373,9 @@ void CVideoPlayerDlg::adjustControlPos()
 	int sliderVideoH = sliderVideoRect.Height();
 	int videoW = totalW - videoFileListW;
 	int videoH = totalH - sliderVideoH - bottomItemH;
-	setDlgItemRect(IDC_VIDEOWND, 0, 0, videoW, videoH);
+
+	//setDlgItemRect(IDC_VIDEOWND, 0, 0, videoW, videoH);
+	QmVideoRenderWindow->SetWindowPos(NULL, 0, 0, videoW, videoH, SWP_NOZORDER);
 	moveDlgItem(IDC_PLAYTIME, 0, videoH);
 	setDlgItemRect(IDC_SLIDER_VIDEO, playTimeRect.Width(), videoH, videoW - (playTimeRect.Width() + totalTimeRect.Width()), sliderVideoH);
 	moveDlgItem(IDC_TOTALTIME, videoW - totalTimeRect.Width(), videoH);

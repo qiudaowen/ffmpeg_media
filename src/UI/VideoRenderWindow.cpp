@@ -36,15 +36,25 @@ VideoRenderWindow::~VideoRenderWindow()
 
 }
 
-void VideoRenderWindow::init(HWND hWnd)
+void VideoRenderWindow::init(int x, int y, int w, int h, HWND hParent)
 {
-	RECT rc;
-	::GetClientRect(hWnd, &rc);
+	static const wchar_t* className = []() {
+		static const wchar_t* className = L"VideoWindow";
+		WNDCLASSEXW wcx = {0};
+		wcx.cbSize = sizeof(wcx);
+		wcx.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+		wcx.lpfnWndProc = ::DefWindowProcW;
+		wcx.hCursor = LoadCursor(NULL,IDC_ARROW);
+		wcx.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+		wcx.lpszClassName = className;
 
-	SubclassWindow(hWnd);
+		// Register the window class. 
+		return RegisterClassEx(&wcx) != FALSE ? className : nullptr;
+	}();
+	CreateEx(0, className, L"VideoRenderWindow", hParent ? WS_CHILD : WS_POPUP , { x, y, w, y }, CWnd::FromHandle(hParent), 0);
 
 	if (m_d3d11Device)
-		m_d3d11Device->createSwapChain(m_hWnd, rc.right - rc.left, rc.bottom - rc.top);
+		m_d3d11Device->createSwapChain(m_hWnd, w, h);
 }
 
 
@@ -118,16 +128,16 @@ void VideoRenderWindow::onRender()
 				int frameW = frame.width();
 				int frameH = frame.height();
 
-				//TODO do not need copy to m_videoTex
+ 				if (m_d3d11Device->drawTexture(tex2D, subResouce, { 0, 0, w, h }))
+ 				{
+ 					break;
+ 				}
 				if (m_videoTex->updateFromTexArray(tex2D, subResouce))
 				{
 					m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
 					break;
 				}
-				else
-				{
-					frame = AVFrameRef::fromHWFrame(frame);
-				}
+				frame = AVFrameRef::fromHWFrame(frame);
 			}
 
 			//update load to gpu

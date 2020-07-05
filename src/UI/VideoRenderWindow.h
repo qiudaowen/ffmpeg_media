@@ -15,7 +15,8 @@ public:
 	VideoRenderWindow();
 	~VideoRenderWindow();
 
-	void init(HWND hWnd);
+	void init(int x, int y, int w, int h, HWND hParent);
+
 	ID3D11Device* device() const;
 protected:
 	afx_msg void OnPaint();

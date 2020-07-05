@@ -29,7 +29,7 @@ public:
 	bool createSwapChain(HWND hWnd, int w, int h);
 	
 	void begin();
-	bool drawTexture(ID3D11Texture2D* texture, const RECT& dstRect);
+	bool drawTexture(ID3D11Texture2D* texture, int subResouce, const RECT& dstRect);
 	void drawTexture(D3D11Texture* pTexture, const RECT& dstRect);
 	void present();
 	void resize(int w, int h);

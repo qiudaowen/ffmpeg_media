@@ -21,7 +21,7 @@ public:
 		return m_renderWindow.get();
 	}
 
-	void init(HWND hWnd);
+	void init();
 	void unInit();
 protected:
 	std::shared_ptr<FFmpegHwDevice> m_hwDevice;

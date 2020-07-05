@@ -48,7 +48,6 @@ static void FillSwapChainDesc(HWND hWnd, UINT w, UINT h, DXGI_SWAP_CHAIN_DESC *o
 	out->Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 	//out->Flags = 512; // DXGI_SWAP_CHAIN_FLAG_YUV_VIDEO;
 
-#if 0
 	bool isWin10OrGreater = false;
 	HMODULE hKernel32 = GetModuleHandle(TEXT("kernel32.dll"));
 	if (hKernel32 != NULL)
@@ -68,7 +67,6 @@ static void FillSwapChainDesc(HWND hWnd, UINT w, UINT h, DXGI_SWAP_CHAIN_DESC *o
 			out->BufferCount = 1;
 		}
 	}
-#endif
 }
 
 static HRESULT createDevice(uint64_t adapterLUID, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
@@ -256,7 +254,7 @@ void D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
 }
 
 
-bool D3D11Device::drawTexture(ID3D11Texture2D* texture, const RECT& dstRect)
+bool D3D11Device::drawTexture(ID3D11Texture2D* texture, int subResouce, const RECT& dstRect)
 {
 	D3D11_TEXTURE2D_DESC desc;
 	texture->GetDesc(&desc);
@@ -265,8 +263,8 @@ bool D3D11Device::drawTexture(ID3D11Texture2D* texture, const RECT& dstRect)
 	case DXGI_FORMAT_NV12:
 	{
 		CComPtr<ID3D11ShaderResourceView> resViews[2];
-		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, DXGI_FORMAT_R8_UNORM);
-		resViews[1] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, DXGI_FORMAT_R8G8_UNORM);
+		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, subResouce, DXGI_FORMAT_R8_UNORM);
+		resViews[1] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, subResouce, DXGI_FORMAT_R8G8_UNORM);
 		if (resViews[0] && resViews[1])
 		{
 			CComPtr<ID3D11PixelShader> nvPS = m_shaderResource->pixelShader(ShaderResource::kPS_NV12);
@@ -280,7 +278,7 @@ bool D3D11Device::drawTexture(ID3D11Texture2D* texture, const RECT& dstRect)
 	case DXGI_FORMAT_R8G8B8A8_UNORM:
 	{
 		CComPtr<ID3D11ShaderResourceView> resViews[1];
-		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, desc.Format);
+		resViews[0] = D3D11Texture::createTex2DResourceView(m_d3d11Device, texture, subResouce, desc.Format);
 		if (resViews[0])
 		{
 			CComPtr<ID3D11PixelShader> nvPS = m_shaderResource->pixelShader(ShaderResource::kPS_Textures);
@@ -386,10 +384,7 @@ void D3D11Device::_draw(ID3D11PixelShader* psShader, ID3D11ShaderResourceView** 
 	m_d3d11DeviceContext->VSSetShader(m_shaderResource->vertexShader(), nullptr, 0);
 	m_d3d11DeviceContext->PSSetShader(psShader, nullptr, 0);
 
-// 	static RECT lastRect = { 0 };
-// 	if (memcmp(&lastRect, &dstRect, sizeof(RECT)) != 0)
 	{
-		//lastRect = dstRect;
 		auto PointToNdc = [](int x, int y, float z, int targetWidth, int targetHeight) -> XMFLOAT3
 		{
 			float X = 2.0f * (float)x / targetWidth - 1.0f;

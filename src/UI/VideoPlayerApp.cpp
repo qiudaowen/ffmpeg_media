@@ -20,10 +20,8 @@ VideoPlayerApp* VideoPlayerApp::instance()
 	return &gInstance;
 }
 
-void VideoPlayerApp::init(HWND hWnd)
+void VideoPlayerApp::init()
 {
-	m_renderWindow->init(hWnd);
-
 	m_playerModel = std::make_shared<VideoPlayerModel>();
 	m_playerModel->init(m_renderWindow, m_renderWindow->device());
 }
