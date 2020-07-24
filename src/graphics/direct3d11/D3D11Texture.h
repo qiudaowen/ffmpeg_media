@@ -24,6 +24,7 @@ public:
 	D3D11Texture(ID3D11Device* pDevice, ID3D11DeviceContext* deviceCtx = nullptr);
 	~D3D11Texture();
 
+	bool updateFromShareHandle(HANDLE shareHandle);
 	bool updateFromTexArray(ID3D11Texture2D* tex, int index);
 	bool updateYUV(const uint8_t* const datas[], const int dataSlice[], int w, int h);
 	bool updateNV12(const uint8_t* const datas[], const int dataSlice[], int w, int h);
@@ -50,7 +51,7 @@ protected:
 	int m_curTexType = kNone;
 	int m_width = 0;
 	int m_height = 0;
+	HANDLE m_shareHandle = 0;
 	CComPtr<ID3D11Texture2D> m_texturePlanes[3];
-	CComPtr<ID3D11Texture2D> m_texturePlanesStages[3];
 	CComPtr<ID3D11ShaderResourceView> m_resourceViewPlanes[3];
 };

@@ -101,6 +101,7 @@ END_MESSAGE_MAP()
 BOOL CVideoPlayerDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
+	UpdateData(FALSE);
 
 	// 将“关于...”菜单项添加到系统菜单中。
 
@@ -128,16 +129,15 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	m_bInitDialog = true;
+	//此时  m_videoFileList.IsWindowVisible() is false. 需要post event.
 	MsgWnd::mainMsgWnd()->post([this]() {
 		m_videoProgressSlider.SetRange(0, 10000, TRUE);
 		m_volSliderCtrl.SetRange(0, 10000, TRUE);
 		m_volSliderCtrl.SetPos(10000);
-		adjustControlPos();
 		QmVideoRenderWindow->ShowWindow(SW_SHOW);
+		adjustControlPos();
 
 		SetTimer(QmPlayTimerID, 500, NULL);
-		UpdateData(FALSE);
-		UpdateWindow();
 	});
 
 	QmVideoRenderWindow->init(0, 0, 640, 480, m_hWnd);

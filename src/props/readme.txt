@@ -1,0 +1,1 @@
+conf.props (PlatformToolset 等设置) 需要放在 Microsoft.Cpp.props 之前

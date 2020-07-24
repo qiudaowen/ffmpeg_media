@@ -156,8 +156,6 @@ void VideoRenderWindow::onRender()
 			}
 			case FOURCC_BGRA:
 			case FOURCC_RGBA:
-			case FOURCC_ABGR:
-			case FOURCC_ARGB:
 			{
 				m_videoTex->updateRGB32(frame.data(0), frame.linesize(0), frame.width(), frame.height());
 				break;

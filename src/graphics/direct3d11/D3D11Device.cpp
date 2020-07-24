@@ -4,76 +4,11 @@
 #include "ShaderResource.h"
 #include "VertexBuffers.h"
 #include "D3D11Texture.h"
+#include "../dxgi/DxgiUtils.h"
 
-static CComPtr<IDXGIAdapter1> getDefaultAdapter()
+HRESULT D3D11Device::createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
 {
-	CComPtr<IDXGIFactory1> dxgiFactory;
-	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
-
-	CComPtr<IDXGIAdapter1> adapter;
-	dxgiFactory->EnumAdapters1(0, &adapter);
-
-	return adapter;
-}
-
-static CComPtr<IDXGIAdapter1> chooseAdapterByLUID(uint64_t luid)
-{
-	CComPtr<IDXGIFactory1> dxgiFactory;
-	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
-
-	CComPtr<IDXGIAdapter1> adapter;
-	for (int i = 0; dxgiFactory->EnumAdapters1(i, &adapter) == S_OK; ++i)
-	{
-		DXGI_ADAPTER_DESC desc;
-		HRESULT hr = adapter->GetDesc(&desc);
-		if (memcmp(&luid, &desc.AdapterLuid, sizeof(desc.AdapterLuid)) == 0)
-			return adapter;
-
-		adapter = nullptr;
-	}
-	return nullptr;
-}
-
-static void FillSwapChainDesc(HWND hWnd, UINT w, UINT h, DXGI_SWAP_CHAIN_DESC *out)
-{
-	ZeroMemory(out, sizeof(*out));
-	out->BufferCount = 3;
-	out->BufferDesc.Width = w;
-	out->BufferDesc.Height = h;
-	out->BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	out->BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	out->SampleDesc.Count = 1;
-	out->OutputWindow = hWnd;
-	out->Windowed = TRUE;
-	out->Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-	//out->Flags = 512; // DXGI_SWAP_CHAIN_FLAG_YUV_VIDEO;
-
-	bool isWin10OrGreater = false;
-	HMODULE hKernel32 = GetModuleHandle(TEXT("kernel32.dll"));
-	if (hKernel32 != NULL)
-		isWin10OrGreater = GetProcAddress(hKernel32, "GetSystemCpuSetInformation") != NULL;
-	if (isWin10OrGreater)
-		out->SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	else
-	{
-		bool isWin80OrGreater = false;
-		if (hKernel32 != NULL)
-			isWin80OrGreater = GetProcAddress(hKernel32, "CheckTokenCapability") != NULL;
-		if (isWin80OrGreater)
-			out->SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
-		else
-		{
-			out->SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-			out->BufferCount = 1;
-		}
-	}
-}
-
-static HRESULT createDevice(uint64_t adapterLUID, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
-{
-	CComPtr<IDXGIAdapter1> adapter = chooseAdapterByLUID(adapterLUID);
 	HRESULT hr = S_OK;
-
 	hr = D3D11CreateDevice(adapter,
 		adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
 		nullptr,    // Module
@@ -105,7 +40,7 @@ bool D3D11Device::create(uint64_t adapterLUID)
 	if (m_d3d11Device)
 		return true;
 
-	HRESULT hr = createDevice(adapterLUID, &m_d3d11Device, &m_d3d11DeviceContext);
+	HRESULT hr = createDevice(DxgiUtils::getAdapter(adapterLUID), &m_d3d11Device, &m_d3d11DeviceContext);
 	if (FAILED(hr))
 		return false;
 
@@ -132,7 +67,7 @@ bool D3D11Device::createSwapChain(HWND hWnd, int w, int h)
 	m_swapChain = nullptr;
 
 	DXGI_SWAP_CHAIN_DESC sc_desc;
-	FillSwapChainDesc(hWnd, w, h, &sc_desc);
+	DxgiUtils::fillSwapChainDesc(hWnd, w, h, &sc_desc);
 
 	CComPtr<IDXGIFactory1> dxgiFactory;
 	CreateDXGIFactory1(IID_PPV_ARGS(&dxgiFactory));
@@ -329,9 +264,6 @@ void D3D11Device::_resize(int Width, int Height)
 	m_height = Height;
 }
 
-//
-// Reset render target view
-//
 void D3D11Device::makeRenderTargetView()
 {
 	// Get backbuffer

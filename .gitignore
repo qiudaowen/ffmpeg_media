@@ -5,3 +5,8 @@
 /.vs
 /out
 /src/test/*.user
+/src/wasapi/*.user
+/src/utils/*.user
+/src/graphics/*.user
+/src/media/*.user
+/src/demo/*.user

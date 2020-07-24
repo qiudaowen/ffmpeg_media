@@ -102,6 +102,39 @@ void D3D11Texture::clear()
 	m_width = 0;
 	m_height = 0;
 	m_dxgiFormat = DXGI_FORMAT_UNKNOWN;
+	m_shareHandle = NULL;
+}
+
+bool D3D11Texture::updateFromShareHandle(HANDLE shareHandle)
+{
+	if (m_shareHandle != shareHandle)
+	{
+		clear();
+	}
+
+	CComPtr<ID3D11Texture2D> texture;
+	CComPtr<ID3D11ShaderResourceView> srv = nullptr;
+	HRESULT hr = m_d3d11Device->OpenSharedResource(shareHandle, IID_PPV_ARGS(&texture));
+	if (FAILED(hr))
+		return false;
+
+	D3D11_TEXTURE2D_DESC desc;
+	memset(&desc, 0, sizeof(desc));
+	texture->GetDesc(&desc);
+
+	m_shareHandle = shareHandle;
+	m_texturePlanes[0] = texture;
+	switch (desc.Format)
+	{
+	case DXGI_FORMAT_NV12:
+		m_resourceViewPlanes[0] = createTex2DResourceView(m_d3d11Device, m_texturePlanes[0], DXGI_FORMAT_R8_UNORM);
+		m_resourceViewPlanes[1] = createTex2DResourceView(m_d3d11Device, m_texturePlanes[0], DXGI_FORMAT_R8G8_UNORM);
+		break;
+	default:
+		m_resourceViewPlanes[0] = createTex2DResourceView(m_d3d11Device, m_texturePlanes[0], desc.Format);
+		break;
+	}
+	
 }
 
 bool D3D11Texture::updateFromTexArray(ID3D11Texture2D* tex, int index)

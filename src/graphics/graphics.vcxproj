@@ -23,6 +23,7 @@
     <ClCompile Include="direct3d11\D3D11Texture.cpp" />
     <ClCompile Include="direct3d11\ShaderResource.cpp" />
     <ClCompile Include="direct3d11\VertexBuffers.cpp" />
+    <ClCompile Include="dxgi\DxgiUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="direct3d11\D3D11Device.h" />
@@ -30,6 +31,7 @@
     <ClInclude Include="direct3d11\ShaderResource.h" />
     <ClInclude Include="direct3d11\shaders_d3d11.h" />
     <ClInclude Include="direct3d11\VertexBuffers.h" />
+    <ClInclude Include="dxgi\DxgiUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="direct3d11\shader\PS_Colors.hlsl">
@@ -107,13 +109,13 @@
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(SolutionDir)src\props\conf.props" />
-  <Import Project="$(SolutionDir)src\props\common.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="PropertySheets">
     <Import Project="$(SolutionDir)src\props\out.props" />
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+	<Import Project="$(SolutionDir)src\props\common.props" />
+	<Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup>

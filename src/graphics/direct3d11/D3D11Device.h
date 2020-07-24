@@ -9,11 +9,11 @@ struct ID3D11Texture2D;
 struct ID3D11ShaderResourceView;
 struct ID3D11RenderTargetView;
 struct ID3D11PixelShader;
-
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 struct IDXGISwapChain;
 struct ID3D11SamplerState;
+struct IDXGIAdapter;
 
 class ShaderResource;
 class VertexBuffers;
@@ -36,6 +36,9 @@ public:
 
 	ID3D11Device* device() const;
 	ID3D11DeviceContext* deviceContext() const;
+
+
+	static HRESULT createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext);
 protected:
 	void _resize(int w, int h);
 	bool initShaderResource();
