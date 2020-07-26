@@ -36,9 +36,6 @@ public:
 
 	ID3D11Device* device() const;
 	ID3D11DeviceContext* deviceContext() const;
-
-
-	static HRESULT createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext);
 protected:
 	void _resize(int w, int h);
 	bool initShaderResource();

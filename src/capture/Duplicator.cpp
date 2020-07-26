@@ -18,41 +18,26 @@ bool Duplicator::init(int iMonitor, ID3D11Device* pDevice)
 {
 	unInit();
 
-	CComPtr<IDXGIOutput> dxgiOutput;
-	CComPtr<IDXGIAdapter> adapter;
-	if (DxgiUtils::monitorToOutputIndex(iMonitor, NULL, &dxgiOutput, &adapter) != S_OK)
-		return false;
-
-	CComPtr<IDXGIOutput1> output1;
-	auto hr  = dxgiOutput->QueryInterface(IID_PPV_ARGS(&output1));
-	if (FAILED(hr))
-		return false;
-
-	CComPtr<ID3D11Device> captureDevice;
-	CComPtr<IDXGIAdapter> curAdapter;
-	hr = DxgiUtils::getGetAdapter(pDevice, &curAdapter);
-	if (pDevice == nullptr || !DxgiUtils::isSameAdapter(curAdapter, adapter))
-	{
-		hr = D3D11Device::createDevice(adapter, &captureDevice, nullptr);
-		if (FAILED(hr))
-			return false;
-	}
-	else
-	{
-		captureDevice = pDevice;
-	}
+	CComPtr<ID3D11Device> device;
 	CComPtr<IDXGIOutputDuplication> dup;
-	hr = output1->DuplicateOutput(captureDevice, &dup);
-	if (FAILED(hr))
+	auto hr = DxgiUtils::createDuplicator(iMonitor, pDevice, &dup, &device, NULL);
+	if (hr != S_OK)
 		return false;
 
 	m_duplicator = dup;
-	m_captureDevice = captureDevice;
+	m_captureDevice = device;
 	m_iMonitor = iMonitor;
+
+	return true;
 }
 
 void Duplicator::unInit()
 {
+	if (m_hasFrame)
+	{
+		m_hasFrame = false;
+		m_duplicator->ReleaseFrame();
+	}
 	m_frame = nullptr;
 	m_duplicator = nullptr;
 	m_captureDevice = nullptr;
@@ -68,7 +53,12 @@ bool Duplicator::recreateDuplicator()
 	m_frame = nullptr;
 	m_duplicator = nullptr;
 
-	//TODO
+	CComPtr<IDXGIOutputDuplication> dup;
+	auto hr = DxgiUtils::createDuplicator(m_iMonitor, m_captureDevice, &dup, NULL, NULL);
+	if (hr != S_OK)
+		return false;
+
+	m_duplicator = dup;
 	return m_duplicator;
 }
 
@@ -92,7 +82,7 @@ ID3D11Texture2D* Duplicator::capture(int timeoutInMilliseconds)
 	}
 	hr = m_duplicator->AcquireNextFrame(timeoutInMilliseconds, &info, &res);
 	if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-		return nullptr;
+		return m_frame;
 	}
 	else if (FAILED(hr))
 	{

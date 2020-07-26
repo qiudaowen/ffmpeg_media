@@ -1,4 +1,5 @@
 #include "DxgiUtils.h"
+#include <dxgi1_2.h>
 #include <d3d11.h>
 #include "utils/QsMonitorInfo.h"
 
@@ -100,6 +101,73 @@ namespace DxgiUtils {
 			return true;
 		});
 		return bFounded ? S_OK : E_FAIL;
+	}
+
+	HRESULT createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
+	{
+		HRESULT hr = S_OK;
+		hr = D3D11CreateDevice(adapter,
+			adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
+			nullptr,    // Module
+#ifdef _DEBUG
+			D3D11_CREATE_DEVICE_DEBUG |
+#endif // _DEBUG
+			D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+			nullptr, 0, // Highest available feature level
+			D3D11_SDK_VERSION,
+			ppDevice,
+			nullptr,    // Actual feature level
+			ppDeviceContext);  // Device context
+
+		return hr;
+	}
+
+	HRESULT createDuplicator(int iMonitor, ID3D11Device* pDevice, IDXGIOutputDuplication** ppDuplicator, ID3D11Device** ppDevice, int* pDxgiOutputIndex)
+	{
+		CComPtr<IDXGIOutput> dxgiOutput;
+		CComPtr<IDXGIAdapter> adapter;
+		int outputIndex = 0;
+		HRESULT hr = DxgiUtils::monitorToOutputIndex(iMonitor, &outputIndex, &dxgiOutput, &adapter);
+		if (hr != S_OK)
+			return hr;
+
+		CComPtr<IDXGIOutput1> output1;
+		hr = dxgiOutput->QueryInterface(IID_PPV_ARGS(&output1));
+		if (hr != S_OK)
+			return hr;
+
+		CComPtr<ID3D11Device> captureDevice;
+		CComPtr<IDXGIAdapter> curAdapter;
+		hr = DxgiUtils::getGetAdapter(pDevice, &curAdapter);
+		if (pDevice == nullptr || !DxgiUtils::isSameAdapter(curAdapter, adapter))
+		{
+			if (ppDevice == nullptr)
+				return E_FAIL;
+
+			hr = DxgiUtils::createDevice(adapter, &captureDevice, nullptr);
+			if (hr != S_OK)
+				return hr;
+		}
+		else
+		{
+			captureDevice = pDevice;
+		}
+		CComPtr<IDXGIOutputDuplication> dup;
+		hr = output1->DuplicateOutput(captureDevice, &dup);
+		if (hr != S_OK)
+			return hr;
+
+		*ppDuplicator = dup;
+		(*ppDuplicator)->AddRef();
+		if (ppDevice)
+		{
+			*ppDevice = captureDevice;
+			(*ppDevice)->AddRef();
+		}
+		if (pDxgiOutputIndex)
+			*pDxgiOutputIndex = outputIndex;
+
+		return S_OK;
 	}
 
 	HRESULT getGetAdapter(ID3D11Device* pDx11Device, IDXGIAdapter** ppAdapter)

@@ -6,24 +6,6 @@
 #include "D3D11Texture.h"
 #include "../dxgi/DxgiUtils.h"
 
-HRESULT D3D11Device::createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext)
-{
-	HRESULT hr = S_OK;
-	hr = D3D11CreateDevice(adapter,
-		adapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE,
-		nullptr,    // Module
-#ifdef _DEBUG
-		D3D11_CREATE_DEVICE_DEBUG |
-#endif // _DEBUG
-		D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-		nullptr, 0, // Highest available feature level
-		D3D11_SDK_VERSION,
-		ppDevice,
-		nullptr,    // Actual feature level
-		ppDeviceContext);  // Device context
-
-	return hr;
-}
 
 D3D11Device::D3D11Device()
 {
@@ -40,7 +22,7 @@ bool D3D11Device::create(uint64_t adapterLUID)
 	if (m_d3d11Device)
 		return true;
 
-	HRESULT hr = createDevice(DxgiUtils::getAdapter(adapterLUID), &m_d3d11Device, &m_d3d11DeviceContext);
+	HRESULT hr = DxgiUtils::createDevice(DxgiUtils::getAdapter(adapterLUID), &m_d3d11Device, &m_d3d11DeviceContext);
 	if (FAILED(hr))
 		return false;
 

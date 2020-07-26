@@ -24,6 +24,11 @@
   <ItemGroup>
     <ClCompile Include="Duplicator.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\graphics\graphics.vcxproj">
+      <Project>{2fb57471-4085-4718-8763-1d4ded4aa68f}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -48,9 +53,11 @@
     </ClCompile>
     <Link>
       <SubSystem Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Console</SubSystem>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">DXGI.lib;D3D11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Link>
       <SubSystem Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Console</SubSystem>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">DXGI.lib;D3D11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
