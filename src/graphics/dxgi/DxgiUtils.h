@@ -17,8 +17,9 @@ namespace DxgiUtils {
 	HRESULT createDevice(IDXGIAdapter* adapter, ID3D11Device** ppDevice, ID3D11DeviceContext** ppDeviceContext);
 	HRESULT createDuplicator(int monitorIndex, ID3D11Device* pDevice, IDXGIOutputDuplication** ppDuplicator, ID3D11Device** ppDevice, int* pDxgiOutputIndex);
 	
-	HRESULT getGetAdapter(ID3D11Device* pDx11Device, IDXGIAdapter** ppAdapter);
+	CComPtr<IDXGIAdapter> getAdapter(ID3D11Device* pDx11Device);
 	bool isSameAdapter(IDXGIAdapter* pAdapter1, IDXGIAdapter* pAdapter2);
+	bool isSameAdapter(ID3D11Device* device1, ID3D11Device* device2);
 
 	void fillSwapChainDesc(HWND hWnd, UINT w, UINT h, DXGI_SWAP_CHAIN_DESC *out);
 

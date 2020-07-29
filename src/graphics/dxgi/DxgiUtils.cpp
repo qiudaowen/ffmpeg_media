@@ -137,8 +137,7 @@ namespace DxgiUtils {
 			return hr;
 
 		CComPtr<ID3D11Device> captureDevice;
-		CComPtr<IDXGIAdapter> curAdapter;
-		hr = DxgiUtils::getGetAdapter(pDevice, &curAdapter);
+		CComPtr<IDXGIAdapter> curAdapter = getAdapter(pDevice);
 		if (pDevice == nullptr || !DxgiUtils::isSameAdapter(curAdapter, adapter))
 		{
 			if (ppDevice == nullptr)
@@ -170,32 +169,43 @@ namespace DxgiUtils {
 		return S_OK;
 	}
 
-	HRESULT getGetAdapter(ID3D11Device* pDx11Device, IDXGIAdapter** ppAdapter)
+	CComPtr<IDXGIAdapter> getAdapter(ID3D11Device* pDx11Device)
 	{
+		CComPtr<IDXGIAdapter> adapter;
 		if (pDx11Device == nullptr)
-			return E_FAIL;
+			return adapter;
 
 		CComPtr<IDXGIDevice> dxgiDevice;
 		HRESULT hr = pDx11Device->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
 		if (FAILED(hr))
 		{
-			return hr;
+			return adapter;
 		}
-		hr = dxgiDevice->GetAdapter(ppAdapter);
+		hr = dxgiDevice->GetAdapter(&adapter);
 		if (FAILED(hr))
 		{
-			return hr;
+			return nullptr;
 		}
-		return hr;
+		return adapter;
 	}
 
 	bool isSameAdapter(IDXGIAdapter* pAdapter1, IDXGIAdapter* pAdapter2)
 	{
+		if (pAdapter1 == nullptr || pAdapter2 == nullptr)
+			return pAdapter1 == nullptr && pAdapter2 == nullptr;
+
 		DXGI_ADAPTER_DESC adapterDesc1;
 		HRESULT hr = pAdapter1->GetDesc(&adapterDesc1);
 		DXGI_ADAPTER_DESC adapterDesc2;
 		pAdapter2->GetDesc(&adapterDesc2);
 		return memcmp(&adapterDesc1.AdapterLuid, &adapterDesc2.AdapterLuid, sizeof(adapterDesc2.AdapterLuid)) == 0;
+	}
+
+	bool isSameAdapter(ID3D11Device* device1, ID3D11Device* device2)
+	{
+		CComPtr<IDXGIAdapter> adapter1 = getAdapter(device1);
+		CComPtr<IDXGIAdapter> adapter2 = getAdapter(device2);
+		return isSameAdapter(adapter1, adapter2);
 	}
 
 	CComPtr<IDXGIFactory1> dxgiFactory()

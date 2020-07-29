@@ -111,6 +111,8 @@ bool D3D11Texture::updateFromShareHandle(HANDLE shareHandle)
 	{
 		clear();
 	}
+	else
+		return true;
 
 	CComPtr<ID3D11Texture2D> texture;
 	CComPtr<ID3D11ShaderResourceView> srv = nullptr;
