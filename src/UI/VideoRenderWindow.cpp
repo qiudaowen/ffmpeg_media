@@ -80,13 +80,6 @@ void VideoRenderWindow::OnSize(UINT nType, int cx, int cy)
 
 void VideoRenderWindow::onRender()
 {
-	static libtime::FpsTimer m_fps;
-	if (m_fps.tick())
-	{
-		std::wstring sLog = L"OnVideoFrame fps=" + std::to_wstring(m_fps.fps()) + L"\n";
-		OutputDebugStringW(sLog.c_str());
-	}
-
 	RECT rc;
 	::GetClientRect(m_hWnd, &rc);
 	int w = rc.right - rc.left;

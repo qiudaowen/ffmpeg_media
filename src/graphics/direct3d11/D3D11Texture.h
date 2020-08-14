@@ -21,7 +21,7 @@ public:
 		kNV12,
 		kBGRA32,
 	};
-	D3D11Texture(ID3D11Device* pDevice, ID3D11DeviceContext* deviceCtx = nullptr);
+	D3D11Texture(ID3D11Device* pDevice);
 	~D3D11Texture();
 
 	bool updateFromShareHandle(HANDLE shareHandle);

@@ -5,9 +5,9 @@
 #include "utils/libtime.h"
 #include <utils/LogTimeElapsed.h>
 
-D3D11Texture::D3D11Texture(ID3D11Device* pDevice, ID3D11DeviceContext* deviceCtx)
+D3D11Texture::D3D11Texture(ID3D11Device* pDevice)
 	: m_d3d11Device(pDevice)
-	, m_d3d11DeviceContext(deviceCtx)
+	, m_d3d11DeviceContext(nullptr)
 {
 	if (!m_d3d11DeviceContext)
 	{

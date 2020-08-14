@@ -288,7 +288,6 @@ void QcMultiMediaPlayerPrivate::demuxeThread()
 				::Sleep(10);
 				continue;
 			}
-
 			AVPacketPtr pkt = FFmpegUtils::allocAVPacket();
 			int iRet = m_pDemuxer->readPacket(pkt);
 			if (iRet == 0)
@@ -368,6 +367,22 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(true, pkt) || m_pDemuxer->isFileEnd())
 				{
+					static uint32_t totalTime;
+					static uint32_t gCount = 0;
+					static libtime::FpsTimer fps;
+					libtime::ScopedTime scoped([&](uint32_t time) {
+						totalTime += time;
+						++gCount;
+						if (fps.tick())
+						{
+							wchar_t buffer[256];
+							wsprintfW(buffer, L"videoTime=%d fps=%d\n", totalTime/gCount, (int)fps.fps());
+							OutputDebugStringW(buffer);
+							totalTime = 0;
+							gCount = 0;
+						}
+					});
+
 					int iRet = m_pVideoDecoder->decode(pkt.get());
 					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{
@@ -455,6 +470,20 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 				AVPacketPtr pkt;
 				if (readPacket(false, pkt) || m_pDemuxer->isFileEnd())
 				{
+					static uint32_t totalTime;
+					static uint32_t gCount = 0;
+					static libtime::FpsTimer fps;
+					libtime::ScopedTime scoped([&](uint32_t time) {
+						totalTime += time;
+						++gCount;
+						if (fps.tick())
+						{
+							wchar_t buffer[256];
+							wsprintfW(buffer, L"audioTime=%d fps=%d\n", totalTime / gCount, (int)fps.fps());
+							OutputDebugStringW(buffer);
+						}
+					});
+
 					int iRet = m_pAudioDecoder->decode(pkt.get());
 					for (; iRet == FFmpegVideoDecoder::kOk;)
 					{

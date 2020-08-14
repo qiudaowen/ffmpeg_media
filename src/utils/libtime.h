@@ -31,6 +31,22 @@ namespace libtime
 	protected:
 		steady_clock::time_point m_startTime;
 	};
+	class ScopedTime
+	{
+	public:
+		ScopedTime(std::function<void(uint32_t)>&& cb)
+			: m_timeCost(std::move(cb))
+		{
+			m_tm.restart();
+		}
+		~ScopedTime()
+		{
+			m_timeCost(m_tm.elapsedMS());
+		}
+	protected:
+		Time m_tm;
+		std::function<void(uint32_t)> m_timeCost;
+	};
 
 	class FpsTimer
 	{
