@@ -2,17 +2,23 @@
 
 #include <windows.h>
 #include <stdint.h>
+#include <string>
 
 class QcSharedMemory;
-
-class QcVideoSharedMemory  
-{  
-public:
-    QcVideoSharedMemory(const wchar_t* name);
-	~QcVideoSharedMemory();
-
+class QcVideoSharedMemory
+{
+    struct QsHeadInfo
+    {
+        int readIndex;
+        int writeIndex;
+		int nFrameBuffer;
+		uint8_t reverse[64];
+		QsFrameInfo frameInfo[0];
+    };
 	struct QsFrameInfo
 	{
+		int mapID;
+		int bufferSize;
 		int width;
 		int heigth;
 		int format;
@@ -20,29 +26,29 @@ public:
 		uint8_t reverse[64];
 		uint8_t data[0];
 	};
-	struct QsShareInfo
+	struct QsFrameData
 	{
-		int readOffset;
-		int swapOffset;
-		int writeOffset;
-		QsFrameInfo frameInfo;
+		QcSharedMemory* m_pData;
 	};
+public:
+    QcVideoSharedMemory(const wchar_t* name);
+    ~QcVideoSharedMemory();
 
-	bool ensure(int w, int h, int format);
-	bool attach(bool bReadOnly = false);
-	bool detach();
+    bool create(int nFrameBuffer);
+    bool attach(bool bReadOnly);
+    bool detach();
 
-    HANDLE readableEvent() const { return m_readableEvent; }
-    HANDLE writableEvent() const { return m_writableEvent; }
+    void* lockWriteBuffer(int w, int h, int format, bool bOverWrite = false);
+    void unLockWriteBuffer();
 
-	//shareHandle can use in CreateDIBSection
-	void* lockWriteBuffer(DWORD* offset = nullptr, HANDLE* shareMemHandle = nullptr, int waitTime = 0);
-	void unLockWriteBuffer(QsFrameInfo& info, bool swapReadWrite=true);
-
-	void* lockReadBuffer(QsFrameInfo& info, int waitTime = 0);
-	void unLockReadBuffer();
+    void* lockReadBuffer(int waitTime = 0);
+    void unLockReadBuffer();
+protected:
+    bool ensureFrameBuffer(int w, int h, int format);
+	QsFrameInfo* frameInfo(int index);
 private:
-	QcSharedMemory* m_outputShareMgr;
-    HANDLE m_readableEvent;
-    HANDLE m_writableEvent;
-};  
+    QsHeadInfo* m_pHeadInfo = nullptr;
+    QcSharedMemory* m_pHead = nullptr;
+    HANDLE m_headChangeEvent = 0;
+    HANDLE m_frameEvent = 0;
+};

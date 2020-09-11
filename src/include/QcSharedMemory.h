@@ -64,7 +64,7 @@ public:
 		return m_key;
 	}
 
-	bool create(int size, AccessMode mode)
+	bool create(int size, AccessMode mode = QcSharedMemory::ReadWrite)
 	{
 		if (size <= 0)
 			return false;
@@ -138,6 +138,9 @@ public:
 	{
 		return m_hand;
 	}
+    bool isCreator() const {
+        return m_bCreator;
+    }
 protected:
 	bool _create(size_t size)
 	{
@@ -161,12 +164,13 @@ protected:
 				HANDLE hHandle = CreateFileMapping(INVALID_HANDLE_VALUE, 0, PAGE_READWRITE, 0, (DWORD)size, (wchar_t*)key.c_str());
 				if (hHandle && GetLastError() == ERROR_ALREADY_EXISTS)
 				{
-					CloseHandle(hHandle);
-					hHandle = NULL;
+					m_hand = hHandle;
+                    m_bCreator = false;
 				}
 				else
 				{
 					m_hand = hHandle;
+                    m_bCreator = true;
 				}
 			}
 		}
@@ -188,6 +192,7 @@ private:
 
 	std::wstring m_key;
 	bool		m_bChangeName;
+    bool        m_bCreator = false;
 	HANDLE       m_hand;
 	DWORD        m_size;
 	void*        m_memory;
