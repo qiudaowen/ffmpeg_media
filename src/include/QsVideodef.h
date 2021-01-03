@@ -26,6 +26,7 @@ namespace
 		FOURCC_I420 = MAKE_FOURCC('I', '4', '2', '0'),
 		FOURCC_YU12 = MAKE_FOURCC('Y', 'U', '1', '2'),  //same with FOURCC_I420.
 		FOURCC_YV12 = MAKE_FOURCC('Y', 'V', '1', '2'),
+		FOURCC_YUV420P10LE = MAKE_FOURCC('Y', '3', 11, 10),
 
 		FOURCC_NV12 = MAKE_FOURCC('N', 'V', '1', '2'),
 		FOURCC_NV21 = MAKE_FOURCC('N', 'V', '2', '1'),  // 

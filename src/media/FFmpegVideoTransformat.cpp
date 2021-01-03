@@ -1,7 +1,7 @@
 ﻿#include "FFmpegVideoTransformat.h"
 
 extern "C"{
-#include <libavcodec/avcodec.h>
+#include "libavcodec/avcodec.h"
 #include <libavdevice/avdevice.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>

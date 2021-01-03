@@ -11,6 +11,7 @@
 
 class VideoPlayerModel;
 class VideoRenderWindow;
+class Duplicator;
 // CVideoPlayerDlg 对话框
 class CVideoPlayerDlg : public CDialogEx
 {
@@ -49,6 +50,10 @@ public:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnBnClickedHwEnable();
+
+	afx_msg void OnBnClickedCapture();
+	afx_msg void OnBnClickedRecord();
+	afx_msg void OnBnClickedProfile();
 
 protected:
 	QcComInit comInit;

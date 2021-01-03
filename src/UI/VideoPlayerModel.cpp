@@ -8,9 +8,31 @@
 #include "utils/libstring.h"
 #include "win/MsgWnd.h"
 
+
+class MultiMediaNotifyContext : public IMultiMediaNotify
+{
+public:
+	MultiMediaNotifyContext(VideoPlayerModel* pPlayer)
+		: m_player(pPlayer)
+	{
+	}
+	bool onVideoFrame(const AVFrameRef& frame) override {
+		return m_player->onVideoFrame(frame);
+	}
+	bool onAudioFrame(const AVFrameRef& frame) override {
+		return m_player->onAudioFrame(frame);
+	}
+	void toEndSignal() override {
+		m_player->toEndSignal();
+	}
+protected:
+	VideoPlayerModel* m_player;
+};
+
 VideoPlayerModel::VideoPlayerModel()
 {
-	m_player = std::make_unique<QcMultiMediaPlayer>(this);
+	m_multiMediaNotifyContext = std::make_unique<MultiMediaNotifyContext>(this);
+	m_player = std::make_unique<QcMultiMediaPlayer>(m_multiMediaNotifyContext.get());
 	m_audioPlayer = std::make_unique<QcAudioPlayer>();
 	m_audioTransForPlayer = std::make_unique<QcAudioTransformat>();
 	m_hwDevice = std::make_unique<FFmpegHwDevice>();
@@ -21,6 +43,7 @@ VideoPlayerModel::~VideoPlayerModel()
     m_player = nullptr;
     m_audioPlayer = nullptr;
     m_audioTransForPlayer = nullptr;
+	m_multiMediaNotifyContext = nullptr;
 }
 
 void VideoPlayerModel::init(std::weak_ptr<VideoFrameNotify>&& notify, ID3D11Device* pHwDecodeDevcie)
@@ -161,15 +184,15 @@ void VideoPlayerModel::openNext()
 	}
 }
 
-bool VideoPlayerModel::OnVideoFrame(const AVFrameRef& frame)
+bool VideoPlayerModel::onVideoFrame(const AVFrameRef& frame)
 {
 	auto videoNotify = m_videoNotify.lock();
 	if (videoNotify)
-		videoNotify->OnVideoFrame(frame);
+		videoNotify->onVideoFrame(frame);
 	return true;
 }
 
-bool VideoPlayerModel::OnAudioFrame(const AVFrameRef& frame)
+bool VideoPlayerModel::onAudioFrame(const AVFrameRef& frame)
 {
 	AVFrameRef outFrame;
 	m_audioTransForPlayer->transformat(frame.data(), frame.sampleCount(), outFrame);
@@ -177,7 +200,7 @@ bool VideoPlayerModel::OnAudioFrame(const AVFrameRef& frame)
 	return true;
 }
 
-void VideoPlayerModel::ToEndSignal()
+void VideoPlayerModel::toEndSignal()
 {
     std::weak_ptr<VideoPlayerModel> weakThis = shared_from_this();
     MsgWnd::mainMsgWnd()->post([weakThis]() {

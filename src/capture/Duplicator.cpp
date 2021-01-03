@@ -4,6 +4,7 @@
 #include "libgraphics/DxgiUtils.h"
 #include "libgraphics/D3D11Device.h"
 
+
 HRESULT InitializeStage(ID3D11Texture2D* pDx11Tex, ID3D11Texture2D** ppStageTex)
 {
 	D3D11_TEXTURE2D_DESC desc = { 0 };
@@ -115,7 +116,8 @@ ID3D11Texture2D* Duplicator::capture(ID3D11Device* pDevice)
 	}
 	hr = m_duplicator->AcquireNextFrame(0, &info, &res);
 	if (hr == DXGI_ERROR_WAIT_TIMEOUT) {
-		return m_frame;
+		// return m_frame;
+		return nullptr;
 	}
 	else if (FAILED(hr))
 	{
@@ -182,7 +184,7 @@ bool Duplicator::ensureOutputTexture(ID3D11Device* pDevice, ID3D11Texture2D* fra
 	return !!m_destFrame;
 }
 
-bool Duplicator::captureToMemFrame(MemFrameCb&& frameCb)
+bool Duplicator::captureToMemFrame(const MemFrameCb& frameCb)
 {
 	ID3D11Texture2D* frame = capture(NULL);
 	if (frame == nullptr)
@@ -226,7 +228,7 @@ bool Duplicator::captureToMemFrame(MemFrameCb&& frameCb)
 	spDXGISurface->Unmap();
 	return true;
 }
-bool Duplicator::captureToGPUFrame(ID3D11Device* pOutputDevice, GPUFrameCb&& frameCb)
+bool Duplicator::captureToGPUFrame(ID3D11Device* pOutputDevice, const GPUFrameCb& frameCb)
 {
 	if (pOutputDevice == nullptr)
 		return false;

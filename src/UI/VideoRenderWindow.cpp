@@ -40,18 +40,18 @@ void VideoRenderWindow::init(int x, int y, int w, int h, HWND hParent)
 {
 	static const wchar_t* className = []() {
 		static const wchar_t* className = L"VideoWindow";
-		WNDCLASSEXW wcx = {0};
+		WNDCLASSEXW wcx = { 0 };
 		wcx.cbSize = sizeof(wcx);
 		wcx.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 		wcx.lpfnWndProc = ::DefWindowProcW;
-		wcx.hCursor = LoadCursor(NULL,IDC_ARROW);
+		wcx.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wcx.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 		wcx.lpszClassName = className;
 
 		// Register the window class. 
 		return RegisterClassEx(&wcx) != FALSE ? className : nullptr;
 	}();
-	CreateEx(0, className, L"VideoRenderWindow", hParent ? WS_CHILD : WS_POPUP , { x, y, w, y }, CWnd::FromHandle(hParent), 0);
+	CreateEx(0, className, L"VideoRenderWindow", hParent ? WS_CHILD : WS_POPUP, { x, y, w, y }, CWnd::FromHandle(hParent), 0);
 
 	if (m_d3d11Device)
 		m_d3d11Device->createSwapChain(m_hWnd, w, h);
@@ -78,6 +78,78 @@ void VideoRenderWindow::OnSize(UINT nType, int cx, int cy)
 		m_d3d11Device->resize(cx, cy);
 }
 
+bool VideoRenderWindow::drawTexture(ID3D11Texture2D* tex2D, int subResouce)
+{
+	if (!tex2D)
+		return false;
+
+	RECT rc;
+	::GetClientRect(m_hWnd, &rc);
+	int w = rc.right - rc.left;
+	int h = rc.bottom - rc.top;
+	if (m_d3d11Device->drawTexture(tex2D, subResouce, { 0, 0, w, h }))
+	{
+		return true;
+	}
+	if (m_videoTex->updateFromTexArray(tex2D, subResouce))
+	{
+		return m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+	}
+	return false;
+
+}
+void VideoRenderWindow::drawFrame(const uint8_t* const datas[], const int dataSlice[], int texW, int texH, int forccFormat)
+{
+	RECT rc;
+	::GetClientRect(m_hWnd, &rc);
+	int w = rc.right - rc.left;
+	int h = rc.bottom - rc.top;
+
+	//update load to gpu
+	switch (forccFormat)
+	{
+	case FOURCC_I420:
+	{
+		m_videoTex->updateYUV(datas, dataSlice, texW, texH);
+		break;
+	}
+	case FOURCC_NV12:
+	{
+		m_videoTex->updateNV12(datas, dataSlice, texW, texH);
+		break;
+	}
+	case FOURCC_BGRA:
+	case FOURCC_RGBA:
+	{
+		m_videoTex->updateRGB32(datas[0], dataSlice[0], texW, texH);
+		break;
+	}
+	default:
+	{
+		m_videoTex->lockRGB32(w, h, 0, [&](uint8_t* dstData, int dstDataSlice) {
+			uint8_t* const dstDatas[] = { dstData };
+			int dstSlice[] = { dstDataSlice };
+
+			m_transFormat->transformat(texW, texH, forccFormat, datas, dataSlice
+				, w, h, FFmpegUtils::fourccToFFmpegFormat(FOURCC_BGRA), dstDatas, dstSlice);
+			});
+		break;
+	}
+	}
+	m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
+}
+
+void VideoRenderWindow::beginRender()
+{
+	if (++m_iRenderRecurive == 1)
+		m_d3d11Device->begin();
+}
+void VideoRenderWindow::endRender()
+{
+	if (--m_iRenderRecurive == 0)
+		m_d3d11Device->present();
+}
+
 void VideoRenderWindow::onRender()
 {
 	RECT rc;
@@ -85,6 +157,35 @@ void VideoRenderWindow::onRender()
 	int w = rc.right - rc.left;
 	int h = rc.bottom - rc.top;
 
+#ifdef DxRender
+	if (m_d3d11Device)
+	{
+		AVFrameRef frame;
+		{
+			QmStdMutexLocker(m_lastFrameMutex);
+			frame = m_lastFrame;
+		}
+		beginRender();
+		//LogTimeElapsed logRender(L"renderFrameD3d11");
+		do
+		{
+			if (frame.isHWFormat())
+			{
+				ID3D11Texture2D* tex2D = (ID3D11Texture2D*)frame.data(0);
+				int subResouce = (int)frame.data(1);
+				int frameW = frame.width();
+				int frameH = frame.height();
+				if (drawTexture(tex2D, subResouce))
+					break;
+				frame = AVFrameRef::fromHWFrame(frame);
+			}
+			int iVideoFormat = FFmpegUtils::ffmpegFormatToFourcc(frame.format());
+			drawFrame(frame.data(), frame.linesize(), frame.width(), frame.height(), iVideoFormat);
+
+		} while (0);
+		endRender();
+	}
+#else
 	if (m_memorySurface)
 	{
 		m_memorySurface->resize(w, h);
@@ -101,78 +202,10 @@ void VideoRenderWindow::onRender()
 		::BitBlt(hDC, 0, 0, w, h, m_memorySurface->dcHandle(), 0, 0, SRCCOPY);
 		::ReleaseDC(m_hWnd, hDC);
 	}
-	if (m_d3d11Device)
-	{
-		AVFrameRef frame;
-		{
-			QmStdMutexLocker(m_lastFrameMutex);
-			frame = m_lastFrame;
-		}
-		m_d3d11Device->begin();
-
-
-		//LogTimeElapsed logRender(L"renderFrameD3d11");
-		do 
-		{
-			if (frame.isHWFormat())
-			{
-				ID3D11Texture2D* tex2D = (ID3D11Texture2D*)frame.data(0);
-				int subResouce = (int)frame.data(1);
-				int frameW = frame.width();
-				int frameH = frame.height();
-
- 				if (m_d3d11Device->drawTexture(tex2D, subResouce, { 0, 0, w, h }))
- 				{
- 					break;
- 				}
-				if (m_videoTex->updateFromTexArray(tex2D, subResouce))
-				{
-					m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
-					break;
-				}
-				frame = AVFrameRef::fromHWFrame(frame);
-			}
-
-			//update load to gpu
-			int iVideoFormat = FFmpegUtils::ffmpegFormatToFourcc(frame.format());
-			switch (iVideoFormat)
-			{
-  			case FOURCC_I420:
-  			{
-  				m_videoTex->updateYUV(frame.data(), frame.linesize(), frame.width(), frame.height());
-  				break;
-  			}
-			case FOURCC_NV12:
-			{
-				m_videoTex->updateNV12(frame.data(), frame.linesize(), frame.width(), frame.height());
-				break;
-			}
-			case FOURCC_BGRA:
-			case FOURCC_RGBA:
-			{
-				m_videoTex->updateRGB32(frame.data(0), frame.linesize(0), frame.width(), frame.height());
-				break;
-			}
-			default:
-			{
-				m_videoTex->lockRGB32(frame.width(), frame.height(), 0, [&](uint8_t* dstData, int dataSlice) {
-					uint8_t * const dstDatas[] = { dstData };
-					int dstSlice[] = { dataSlice };
-
-					m_transFormat->transformat(frame.width(), frame.height(), frame.format(), frame.data(), frame.linesize()
-						, frame.width(), frame.height(), FFmpegUtils::fourccToFFmpegFormat(FOURCC_BGRA), dstDatas, dstSlice);
-				});
-				break;
-			}
-			}
-			m_d3d11Device->drawTexture(m_videoTex.get(), { 0, 0, w, h });
-		} while (0);
-
-		m_d3d11Device->present();
-	}
+#endif
 }
 
-bool VideoRenderWindow::OnVideoFrame(const AVFrameRef& frame)
+bool VideoRenderWindow::onVideoFrame(const AVFrameRef& frame)
 {
 	{
 		QmStdMutexLocker(m_lastFrameMutex);
@@ -184,11 +217,11 @@ bool VideoRenderWindow::OnVideoFrame(const AVFrameRef& frame)
 		std::weak_ptr<VideoRenderWindow> weakThis = shared_from_this();
 #if 0
 		auto pThis = weakThis.lock();
-			if (pThis)
-			{
-				pThis->m_bUpdating = false;
-				pThis->onRender();
-			}
+		if (pThis)
+		{
+			pThis->m_bUpdating = false;
+			pThis->onRender();
+		}
 #else
 		MsgWnd::mainMsgWnd()->post([weakThis]() {
 			auto pThis = weakThis.lock();
@@ -197,7 +230,7 @@ bool VideoRenderWindow::OnVideoFrame(const AVFrameRef& frame)
 				pThis->m_bUpdating = false;
 				pThis->onRender();
 			}
-		});
+			});
 #endif
 	}
 	return true;

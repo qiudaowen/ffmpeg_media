@@ -10,9 +10,9 @@ struct AVBufferRef;
 class IMultiMediaNotify
 {
 public:
-	virtual bool OnVideoFrame(const AVFrameRef& frame) = 0;
-    virtual bool OnAudioFrame(const AVFrameRef& frame) = 0;
-	virtual void ToEndSignal() = 0;
+	virtual bool onVideoFrame(const AVFrameRef& frame) = 0;
+    virtual bool onAudioFrame(const AVFrameRef& frame) = 0;
+	virtual void toEndSignal() = 0;
 };
 
 class MEDIA_API QcMultiMediaPlayer

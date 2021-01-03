@@ -153,13 +153,18 @@ bool D3D11Texture::updateFromTexArray(ID3D11Texture2D* tex, int index)
 			createNV12Texture(desc.Width, desc.Height);
 			break;
 		}
+		case DXGI_FORMAT_B8G8R8A8_UNORM:
+		case DXGI_FORMAT_R8G8B8A8_UNORM:
+		{
+			createRGBTexture(desc.Width, desc.Height, desc.Format);
+			break;
+		}
 		}
 	}
 	if (m_dxgiFormat == DXGI_FORMAT_UNKNOWN)
 		return false;
 	if (m_texturePlanes[1])
 		return false;
-
 
 	m_d3d11DeviceContext->CopySubresourceRegion(m_texturePlanes[0], 0,0,0,0, tex, index, NULL);
 	return true;

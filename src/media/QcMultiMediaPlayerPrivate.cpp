@@ -358,7 +358,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 				}
 				if (bPlay && m_pNotify)
 				{
-					m_pNotify->OnVideoFrame(playFrame);
+					m_pNotify->onVideoFrame(playFrame);
 				}
 			}
 
@@ -460,7 +460,7 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 				}
 				if (bPlay && m_pNotify)
 				{
-					m_pNotify->OnAudioFrame(playFrame);
+					m_pNotify->onAudioFrame(playFrame);
 				}
 			}
 
@@ -521,6 +521,6 @@ void QcMultiMediaPlayerPrivate::onNotifyFileEnd()
 {
 	if (m_pNotify && isEnd())
 	{
-		m_pNotify->ToEndSignal();
+		m_pNotify->toEndSignal();
 	}
 }

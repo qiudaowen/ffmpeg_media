@@ -128,7 +128,7 @@ void D3D11Device::begin()
 		makeRenderTargetView();
 }
 
-void D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
+bool D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
 {
 	switch (pTexture->format())
 	{
@@ -166,8 +166,9 @@ void D3D11Device::drawTexture(D3D11Texture* pTexture, const RECT& dstRect)
 		break;
 	}
 	default:
-		break;
+		return false;
 	}
+	return true;
 }
 
 

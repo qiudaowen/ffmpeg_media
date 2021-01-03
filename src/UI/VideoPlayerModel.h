@@ -17,10 +17,10 @@ struct ID3D11Device;
 
 struct VideoFrameNotify
 {
-	virtual bool OnVideoFrame(const AVFrameRef& frame) = 0;
+	virtual bool onVideoFrame(const AVFrameRef& frame) = 0;
 };
 
-class VideoPlayerModel : public IMultiMediaNotify, public std::enable_shared_from_this<VideoPlayerModel>
+class VideoPlayerModel : public std::enable_shared_from_this<VideoPlayerModel>
 {
 public:
 	VideoPlayerModel();
@@ -45,10 +45,13 @@ public:
 protected:
     void openNext();
 protected:
-	virtual bool OnVideoFrame(const AVFrameRef& frame);
-	virtual bool OnAudioFrame(const AVFrameRef& frame);
-	virtual void ToEndSignal();
+	friend class MultiMediaNotifyContext;
+	bool onVideoFrame(const AVFrameRef& frame);
+	bool onAudioFrame(const AVFrameRef& frame);
+	void toEndSignal();
+	std::unique_ptr<MultiMediaNotifyContext> m_multiMediaNotifyContext;
 protected:
+	
 	std::weak_ptr<VideoFrameNotify> m_videoNotify;
 
 	std::unique_ptr<FFmpegHwDevice> m_hwDevice;

@@ -9,9 +9,6 @@ struct ID3D11Texture2D;
 
 struct IDXGIOutputDuplication;
 
-using MemFrameCb = std::function<void(int w, int h, int dxgiFormat, uint8_t* data, int stride)>;
-using GPUFrameCb = std::function<void(ID3D11Texture2D* frame)>;
-
 class CAPTURE_API Duplicator
 {
 public:
@@ -21,8 +18,8 @@ public:
 	bool init(int iMonitor);
 	void unInit();
 
-	bool captureToMemFrame(MemFrameCb&& frameCb);
-	bool captureToGPUFrame(ID3D11Device* pDevice, GPUFrameCb&& frameCb);
+	bool captureToMemFrame(const MemFrameCb& frameCb);
+	bool captureToGPUFrame(ID3D11Device* pDevice, const GPUFrameCb& frameCb);
 protected:
 	ID3D11Texture2D* capture(ID3D11Device* pDevice);
 	bool recreateDuplicator();
@@ -37,7 +34,6 @@ protected:
 	CComPtr<ID3D11Texture2D> m_destFrame;
 	CComPtr<ID3D11Device> m_destDevice;
 
-	
 	bool m_bInSystemMemory = false;
 	CComPtr<IDXGIOutputDuplication> m_duplicator;
 	int m_iMonitor = 0;

@@ -55,9 +55,9 @@ namespace DxgiUtils {
 			if ((bFilterWindowAdapter && adapterDesc.VendorId == 0x1414 && adapterDesc.DeviceId == 0x8c))
 				continue;
 
-			CComPtr<IDXGIOutput> output;
 			for (int iOutput = 0;; ++iOutput)
 			{
+				CComPtr<IDXGIOutput> output;
 				hr = adapter->EnumOutputs(iOutput, &output);
 				if (hr != S_OK)
 					break;

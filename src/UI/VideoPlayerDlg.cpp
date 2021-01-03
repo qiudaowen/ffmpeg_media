@@ -7,6 +7,7 @@
 #include "VideoPlayerDlg.h"
 #include "afxdialogex.h"
 #include "VideoPlayerModel.h"
+#include "CaptureModel.h"
 #include "VideoRenderWindow.h"
 #include "VideoPlayerApp.h"
 #include "QcComInit.h"
@@ -17,7 +18,11 @@
 #define new DEBUG_NEW
 #endif
 
-#define QmPlayTimerID (1)
+enum {
+	kPlayTimerID = 1,
+	kCaptureTimerID,
+};
+
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -93,6 +98,9 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_ADD_VIDEOFILE, &CVideoPlayerDlg::OnBnClickedButtonAdd)
 	ON_BN_CLICKED(IDC_SHOW_LIST, &CVideoPlayerDlg::OnBnClickedButtonShowList)
 	ON_BN_CLICKED(IDC_HW_ENABLE, &CVideoPlayerDlg::OnBnClickedHwEnable)
+	ON_BN_CLICKED(IDC_CAPTURE, &CVideoPlayerDlg::OnBnClickedCapture)
+	ON_BN_CLICKED(IDC_RECORD, &CVideoPlayerDlg::OnBnClickedRecord)
+	ON_BN_CLICKED(IDC_SHOW_PROFILE, &CVideoPlayerDlg::OnBnClickedProfile)
 END_MESSAGE_MAP()
 
 
@@ -137,7 +145,7 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 		QmVideoRenderWindow->ShowWindow(SW_SHOW);
 		adjustControlPos();
 
-		SetTimer(QmPlayTimerID, 500, NULL);
+		SetTimer(kPlayTimerID, 500, NULL);
 	});
 
 	QmVideoRenderWindow->init(0, 0, 640, 480, m_hWnd);
@@ -307,7 +315,7 @@ void CVideoPlayerDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (QmVideoPlayerModel)
+	if (kPlayTimerID == nIDEvent && QmVideoPlayerModel)
 	{
 		VideoPlayerModel* playerModel = QmVideoPlayerModel;
 		double fPos = playerModel->getProgress();
@@ -319,6 +327,9 @@ void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 		m_curTime = CTimeSpan(curTime / 1000).Format("%H:%M:%S");
 		m_totalTime = CTimeSpan(totalTime / 1000).Format("%H:%M:%S");
 		UpdateData(FALSE);
+	}
+	else if (kCaptureTimerID == nIDEvent) {
+		QmCaptureModel->captureFrameSync();
 	}
 	CDialog::OnTimer(nIDEvent);
 }
@@ -354,6 +365,9 @@ void CVideoPlayerDlg::adjustControlPos()
 	CRect sliderVideoRect = getDlgItemRect(IDC_SLIDER_VIDEO);
 	CRect totalTimeRect = getDlgItemRect(IDC_TOTALTIME);
 	//底部栏
+	CRect profileRect = getDlgItemRect(IDC_SHOW_PROFILE);
+	CRect captureRect = getDlgItemRect(IDC_CAPTURE);
+	CRect recordRect = getDlgItemRect(IDC_RECORD);
 	CRect hwEnableRect = getDlgItemRect(IDC_HW_ENABLE);
 	CRect playBtnRect = getDlgItemRect(IDC_PLAY_PAUSE);
 	CRect volumeTextRect = getDlgItemRect(IDC_VOL_TEXT);
@@ -387,6 +401,14 @@ void CVideoPlayerDlg::adjustControlPos()
 	int bottomItemsTotalW = hwEnableRect.Width() +  playBtnRect.Width() + volumeTextRect.Width() + sliderVolumeRect.Width() + showVideoListBtnRect.Width() + addVideoFileBtnRect.Width();
 	int halfSpaceW = (totalW - bottomItemsTotalW) / 2;
 	int bottomItemX = halfSpaceW;
+
+	moveDlgItem(IDC_SHOW_PROFILE, bottomItemX, bottomItemY);
+	bottomItemX += profileRect.Width();
+	moveDlgItem(IDC_CAPTURE, bottomItemX, bottomItemY);
+	bottomItemX += captureRect.Width();
+	moveDlgItem(IDC_RECORD, bottomItemX, bottomItemY);
+	bottomItemX += recordRect.Width();
+
 	moveDlgItem(IDC_HW_ENABLE, bottomItemX, bottomItemY);
 	bottomItemX += hwEnableRect.Width();
 
@@ -409,4 +431,24 @@ void CVideoPlayerDlg::OnBnClickedHwEnable()
 {
 	UpdateData();
 	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
+}
+
+void CVideoPlayerDlg::OnBnClickedCapture()
+{
+	CapturCallback cb(QmVideoRenderWindow->device(), [this](ID3D11Texture2D* frame) {
+		QmVideoRenderWindow->beginRender();
+		QmVideoRenderWindow->drawTexture(frame, 0);
+		QmVideoRenderWindow->endRender();
+		});
+	QmCaptureModel->init(0, cb);
+	SetTimer(kCaptureTimerID, 16, NULL);
+}
+void CVideoPlayerDlg::OnBnClickedRecord()
+{
+	int a = 0;
+}
+
+void CVideoPlayerDlg::OnBnClickedProfile() 
+{
+
 }

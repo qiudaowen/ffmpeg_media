@@ -20,6 +20,10 @@
 #define IDC_PLAYTIME                    1011
 #define IDC_CHECK1                      1012
 #define IDC_HW_ENABLE                   1012
+#define IDC_RECORD                      1013
+#define IDC_CAPTURE                     1014
+#define IDC_CAPTURE2                    1015
+#define IDC_SHOW_PROFILE                1015
 
 // Next default values for new objects
 // 

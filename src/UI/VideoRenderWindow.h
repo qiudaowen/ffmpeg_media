@@ -8,6 +8,7 @@
 
 class D3D11Device;
 class D3D11Texture;
+struct ID3D11Texture2D;
 class VideoRenderWindow : public CWnd, public VideoFrameNotify, public std::enable_shared_from_this<VideoRenderWindow>
 {
 public:
@@ -18,6 +19,12 @@ public:
 	void init(int x, int y, int w, int h, HWND hParent);
 
 	ID3D11Device* device() const;
+
+	
+	bool drawTexture(ID3D11Texture2D* texture, int subResouce = 0);
+	void drawFrame(const uint8_t* const datas[], const int dataSlice[], int w, int h, int forccFormat);
+	void beginRender();
+	void endRender();
 protected:
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -25,7 +32,7 @@ protected:
 
 protected:
 	void onRender();
-	bool OnVideoFrame(const AVFrameRef& frame) override;
+	bool onVideoFrame(const AVFrameRef& frame) override;
 protected:
 	AVFrameRef m_lastFrame;
 	std::mutex m_lastFrameMutex;
@@ -36,4 +43,6 @@ protected:
 
 	std::shared_ptr<D3D11Device> m_d3d11Device;
 	std::shared_ptr<D3D11Texture> m_videoTex;
+
+	int m_iRenderRecurive = 0;
 };
