@@ -214,7 +214,7 @@ bool VideoRenderWindow::onVideoFrame(const AVFrameRef& frame)
 	if (!m_bUpdating)
 	{
 		m_bUpdating = true;
-		std::weak_ptr<VideoRenderWindow> weakThis = shared_from_this();
+		std::weak_ptr<VideoRenderWindow> weakThis = weak_from_this();
 #if 0
 		auto pThis = weakThis.lock();
 		if (pThis)

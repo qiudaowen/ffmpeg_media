@@ -1,4 +1,4 @@
-﻿
+
 // VideoPlayerDlg.cpp: 实现文件
 //
 
@@ -398,7 +398,15 @@ void CVideoPlayerDlg::adjustControlPos()
 		setDlgItemRect(IDC_LIST_VIDEO, totalW - videoFileListW, 0, videoFileListW, totalH - bottomItemH);
 
 	//底部栏
-	int bottomItemsTotalW = hwEnableRect.Width() +  playBtnRect.Width() + volumeTextRect.Width() + sliderVolumeRect.Width() + showVideoListBtnRect.Width() + addVideoFileBtnRect.Width();
+	int bottomItemsTotalW = profileRect.Width() 
+		+ captureRect.Width()
+		+ recordRect.Width()
+		+ hwEnableRect.Width() 
+		+ playBtnRect.Width() 
+		+ volumeTextRect.Width() 
+		+ sliderVolumeRect.Width() 
+		+ showVideoListBtnRect.Width() 
+		+ addVideoFileBtnRect.Width();
 	int halfSpaceW = (totalW - bottomItemsTotalW) / 2;
 	int bottomItemX = halfSpaceW;
 
