@@ -14,6 +14,20 @@ extern "C" {
 
 static AVRational gContextBaseTime = { 1, AV_TIME_BASE };
 
+double get_rotation(AVStream *st)
+{
+    AVDictionaryEntry *rotate_tag = av_dict_get(st->metadata, "rotate", NULL, 0);
+    double theta = 0;
+
+    if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
+    	theta = atof(rotate_tag->value);
+    }
+     
+    theta -= 360*floor(theta/360 + 0.9/360);
+     
+    return theta;
+}
+
 FFmpegDemuxer::FFmpegDemuxer()
 {
 
@@ -77,6 +91,7 @@ void FFmpegDemuxer::openVideoStream(int i)
     if (AV_NOPTS_VALUE != m_pVideoStream->duration)
         m_mediaInfo.videoTotalTime = QmBaseTimeToMSTime(m_pVideoStream->duration, m_pVideoStream->time_base);
 
+    m_mediaInfo.rotation = get_rotation(m_pVideoStream);
     m_mediaInfo.frameRate = av_q2d(av_stream_get_r_frame_rate(m_pVideoStream));
     m_mediaInfo.videoWidth = p_codec_par->width;
     m_mediaInfo.videoHeight = p_codec_par->height;

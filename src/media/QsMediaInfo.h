@@ -13,6 +13,7 @@ struct QsMediaInfo
 	int videoWidth;
 	int videoHeight;
 	int videoTotalTime;
+	int rotation;
 
 	int sampleRate;
 	int audioFormat;
