@@ -15,11 +15,11 @@ public:
 	QcAudioTransformat();
 	~QcAudioTransformat();
 
-	bool init(const QsAudioPara& sourceInfo, const QsAudioPara& destInfo);
-    const QsAudioPara& srcPara() const;
-    const QsAudioPara& dstPara() const;
+	bool init(const QsAudioParam& sourceInfo, const QsAudioParam& destInfo);
+    const QsAudioParam& srcPara() const;
+    const QsAudioParam& dstPara() const;
 	int getDelaySamples();
-	bool transformat(const uint8_t* const data[], int nb_samples, AVFrameRef& outFrame);
+	bool transformat(const uint8_t* const srcData[], int nb_samples, AVFrameRef& outFrame);
 protected:
 	void CloseSwrContext();
 protected:

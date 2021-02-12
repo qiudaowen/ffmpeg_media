@@ -2,40 +2,18 @@
 
 #include <memory>
 #include <functional>
+#include <thread>
+#include <atomic>
+#include "Utils/QcNotify.h"
 
 struct ID3D11Device;
 struct ID3D11Texture2D;
 class Duplicator;
+class WorkThread;
+class D3D11TexureToMem;
 
-class CapturCallback {
-public:
-	using MemFrameCb = std::function<void(int w, int h, int dxgiFormat, uint8_t* data, int stride)>;
-	using GPUFrameCb = std::function<void(ID3D11Texture2D* frame)>;
-	CapturCallback() {}
-	CapturCallback(MemFrameCb&& cb)
-		: m_memCb(std::move(cb))
-	{
-
-	}
-	CapturCallback(ID3D11Device* pDevice, GPUFrameCb&& cb)
-		: m_pDevice(pDevice)
-		, m_gpuCb(std::move(cb))
-	{
-
-	}
-	operator bool() {
-		return m_gpuCb || m_memCb;
-	}
-
-	ID3D11Device* device() const { return m_pDevice; }
-	const MemFrameCb& memCb() const { return m_memCb; }
-	const GPUFrameCb& gpuCb() const { return m_gpuCb; }
-protected:
-	friend class CaptureModel;
-	ID3D11Device* m_pDevice = nullptr;
-	MemFrameCb m_memCb;
-	GPUFrameCb m_gpuCb;
-};
+using MemFrameCb = std::function<void(int w, int h, int dxgiFormat, uint8_t* data, int stride)>;
+using GPUFrameCb = std::function<void(ID3D11Texture2D* frame)>;
 
 class CaptureModel : public std::enable_shared_from_this<CaptureModel>
 {
@@ -43,9 +21,34 @@ public:
 	CaptureModel();
 	~CaptureModel();
 
-	void init(int iMonitor, const CapturCallback& cb);
-	bool captureFrameSync();
+	void setDevice(ID3D11Device* pDevice);
+	void setCaptureParam(int w, int h, int fps);
+	void start();
+	void stop();
+	void waitStop();
+	bool isStop() const { return m_bStop; }
+
+	int32_t addMemFrameNotify(MemFrameCb cb);
+	int32_t addGPUFrameNotify(GPUFrameCb cb);
+	void removeNotify(int32_t notify);
 protected:
-	Duplicator* m_capture = nullptr;
-	CapturCallback m_cb;
+	void captureLoop();
+
+	void onCaptureFrame(ID3D11Texture2D* frame);
+	void onCaptureMemFrame(int w, int h, int dxgiFormat, uint8_t* data, int stride);
+protected:
+	ID3D11Device* m_device = nullptr;
+	int m_width = 0;
+	int m_height = 0;
+	std::atomic<uint32_t> m_fps = 0;
+	std::atomic<uint32_t> m_frameTime = 0;
+	bool m_bStop = true;
+
+	//video source
+	Duplicator* m_pDestopSource = nullptr;
+	D3D11TexureToMem* m_texToMem = nullptr;
+
+	WorkThread* m_thread = nullptr;
+	QcNotify<MemFrameCb> m_memCb;
+	QcNotify<GPUFrameCb> m_gpuCb;	
 };

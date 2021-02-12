@@ -20,9 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QcEfficiencyProfiler.h" />
+    <ClInclude Include="QcProfileWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="QcEfficiencyProfiler.cpp" />
+    <ClCompile Include="QcProfileWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\graphics\graphics.vcxproj">
@@ -30,7 +32,7 @@
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}</ProjectGuid>
+    <ProjectGuid>{C9766E02-C088-405C-8423-1592533ADEE9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>empty</RootNamespace>
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -60,8 +62,8 @@
   <ItemDefinitionGroup>
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Configuration)'=='Release'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">PROFILE_DLL;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Release'">PROFILE_DLL;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Console</SubSystem>

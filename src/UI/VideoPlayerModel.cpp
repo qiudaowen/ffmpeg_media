@@ -82,12 +82,12 @@ bool VideoPlayerModel::open(const std::wstring& fileName)
 		return false;
 
 	const QsMediaInfo& mediaInfo = *(m_player->getMediaInfo());
-	QsAudioPara audioPara;
+	QsAudioParam audioPara;
 	audioPara.sampleRate = mediaInfo.sampleRate;
-	audioPara.sampleFormat = FFmpegUtils::FromFFmpegAudioFormat(mediaInfo.audioFormat);
+	audioPara.sampleFormat = FFmpegUtils::fromFFmpegAudioFormat(mediaInfo.audioFormat);
 	audioPara.nChannels = mediaInfo.nChannels;
 
-	QsAudioPara bestAudioPara;
+	QsAudioParam bestAudioPara;
 	bRet = m_audioPlayer->open(nullptr, nullptr, &bestAudioPara);
 	if (!bRet)
 		return false;
@@ -127,12 +127,12 @@ void VideoPlayerModel::trigger()
 
 void VideoPlayerModel::setVolume(double fPos)
 {
-	m_audioPlayer->setVolume(fPos);
+	m_audioPlayer->setVolume((float)fPos);
 }
 
 void VideoPlayerModel::setProgress(double fPos)
 {
-	m_player->seek(m_player->getTotalTime() * fPos);
+	m_player->seek((int)(m_player->getTotalTime() * fPos));
 }
 
 double VideoPlayerModel::getProgress()

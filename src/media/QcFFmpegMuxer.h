@@ -1,66 +1,63 @@
-﻿#pragma once
+#pragma once
 
-#include "Thread.h"
-#include "QcCycleQueue.h"
+#include <mutex>
+
+#include "media_global.h"
 #include "QcBuffer.h"
-#include "win_scope_handle.h"
-extern "C"
-{
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-}
+#include "QsMediaInfo.h"
+#include "QsVideodef.h"
+#include "QsAudiodef.h"
 
-class QcFFmpegMuxer : public Thread
+enum AVCodecID;
+struct AVStream;
+struct AVFormatContext;
+struct QsVideoParam;
+struct QsAudioParam;
+class MEDIA_API QcFFmpegMuxer
 {
 public:
 	QcFFmpegMuxer();
 	~QcFFmpegMuxer();
 
-	void setVideoFormat(int width, int height, int fps, int bitrate);
-	void setAudioFormat(unsigned char channels, unsigned short bits, int samples, int bitrate);
+	void setVideoCodecTimeBase(const QsTimeBase& timebase);
+	void setAudioCodecTimeBase(const QsTimeBase& timebase);
+	void setVideoFormat(const QsVideoParam& param);
+	void setAudioFormat(const QsAudioParam& param);
 	void setVideoHeader(const uint8_t *pbuf, int len);
+	void setAudioHeader(const uint8_t *pbuf, int len);
 
 	bool open(const char *file);
 	void close();
+	int32_t duration() const { return m_muxerTime.load(); }
 
-	void addAudio(QcMediaBuffer& buffer);
-	void addVideo(QcMediaBuffer& buffer);
+	bool writeVideo(int32_t pts, const uint8_t *buf, int size, bool bKeyFrame);
+	bool writeVideo(int32_t pts, int32_t dts, const uint8_t *buf, int size, bool bKeyFrame);
+	bool writeAudio(int32_t pts, const uint8_t *buf, int size);
 protected:
-	virtual void OnRun();
-	void close_audio();
-	void close_video();
-	bool add_video_stream(enum AVCodecID codec_id);
-	bool add_audio_stream(enum AVCodecID codec_id);
+	bool newStream(AVCodecID id, AVStream** stream);
+	bool addVideoStream();
+	bool addAudioStream();
 
-	void flush();
-	bool writeVideo(unsigned int pts, uint8_t *buf, int size, int flag);
-	bool writeAudio(unsigned int pts, uint8_t *buf, int size);
+	AVStream* videoStream() const { return m_videoStream; }
+	AVStream* audioStream() const { return m_audioStream; }
 protected:
-	QcMediaBuffer m_mediaBuffer;
-	QcCycleQueue<QcMediaBuffer> m_bufferQueue;
-	QcCriticalLock m_cs;
-    win_scope_handle m_dataHandle;
-
-	AVOutputFormat  *m_fmt;
 	AVFormatContext *m_oc;
-	//AVDictionary    *m_opt;
-	AVStream *m_audio_st;
-	AVStream *m_video_st;
-	int64_t m_frameCount;
-	int             m_width;
-	int             m_height;
-	int             m_fps;
-	int             m_bitrate;
-	unsigned char   m_channels;
-	unsigned short  m_audio_bits;
-	unsigned int    m_audio_samples;
-	unsigned int    m_audio_bitrate;
-	long long       m_fileLength;
-	unsigned int    m_dwStartTime;
-	unsigned int    m_dwStartTimeAudio;
-	unsigned int    m_lastpts;
-	QcBuffer        m_headBuffer;
+	AVStream *m_videoStream;
+	AVStream *m_audioStream;
+
+	QsTimeBase m_videoTimebase;
+	QsTimeBase m_audioTimebase;
+	
+	//video
+	QcBuffer        m_videoHeadBuffer;
+	QsVideoParam    m_videoParam;
+
+	//audio
+	QcBuffer        m_audioHeadBuffer;
+	QsAudioParam    m_audioParam;
+
+	std::atomic_int32_t m_muxerTime = 0;
+	uint64_t		m_fileLength;
+	int64_t         m_startTimeMs;
+	bool			m_foundKeyFrame = false;
 };

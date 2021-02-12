@@ -118,9 +118,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AudioMuxerModel.h" />
     <ClInclude Include="CaptureModel.h" />
     <ClInclude Include="CNiceSlider.h" />
     <ClInclude Include="QcDIBSection.h" />
+    <ClInclude Include="RecordModel.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -132,8 +134,12 @@
     <ClInclude Include="win\MsgWnd.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AudioMuxerModel.cpp">
+      <ShowIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ShowIncludes>
+    </ClCompile>
     <ClCompile Include="CaptureModel.cpp" />
     <ClCompile Include="CNiceSlider.cpp" />
+    <ClCompile Include="RecordModel.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -166,6 +172,9 @@
     </ProjectReference>
     <ProjectReference Include="..\utils\utils.vcxproj">
       <Project>{7ab10d06-7299-47fb-a987-ba7808dacec3}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\wasapi\wasapi.vcxproj">
+      <Project>{eba3dc80-a087-4b77-bc5c-d72f736df2c4}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

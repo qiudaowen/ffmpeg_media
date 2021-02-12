@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="CoreRunloop.cpp" />
     <ClCompile Include="libstring.cpp" />
+    <ClCompile Include="WorkThread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CoreRunloop.h" />
@@ -29,6 +30,7 @@
     <ClInclude Include="libversion.h" />
     <ClInclude Include="libweakBinder.h" />
     <ClInclude Include="ScopedObject.h" />
+    <ClInclude Include="WorkThread.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7AB10D06-7299-47FB-A987-BA7808DACEC3}</ProjectGuid>

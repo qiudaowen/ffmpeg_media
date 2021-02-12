@@ -9,9 +9,12 @@
 class FrameQueue
 {
 public:
-	FrameQueue();
+	FrameQueue(int maxSize = -1);
 
-	bool push(const AVFrameRef& packet);
+	bool push(const AVFrameRef& packet, bool bOverwrite = false);
+	bool pushLock(const AVFrameRef& packet, bool bOverwrite = false);
+
+	std::queue<AVFrameRef> takeAll();
 	bool pop(AVFrameRef& packet);
 	bool front(AVFrameRef& packet);
 	void clear();
@@ -19,6 +22,7 @@ public:
 
 	std::mutex& mutex() { return m_mutex; }
 protected:
-	std::queue<AVFrameRef> m_queue;
 	std::mutex m_mutex;
+	std::queue<AVFrameRef> m_queue;
+	int m_maxSize;
 };

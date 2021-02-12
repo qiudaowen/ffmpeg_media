@@ -1,19 +1,12 @@
 #include "WASAPICapture.h"
+#include <mmdeviceapi.h>
+#include <Audioclient.h>
 #include "QcRingBuffer.h"
 #include "QsAudiodef.h"
 #include "QcComInit.h"
 #include "CoTaskMemPtr.hpp"
 #include "WASAPI_utils.h"
-#include <mmdeviceapi.h>
-#include <Audioclient.h>
 
-#ifdef min
-#undef min
-#endif
-
-#ifdef max
-#undef max
-#endif
 
 WASAPICapture::WASAPICapture()
 {
@@ -31,7 +24,7 @@ void WASAPICapture::setCaptureCb(WSAPICaptureCb&& cb)
     m_audioCb = cb;
 }
 
-bool WASAPICapture::init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para, QsAudioPara* pClosestMatch)
+bool WASAPICapture::init(const wchar_t* deviceID, bool bInputDevice, const QsAudioParam* para, QsAudioParam* pClosestMatch)
 {
     stop();
     m_bInputDevice = bInputDevice;
@@ -75,14 +68,14 @@ HRESULT WASAPICapture::InitDevice(const wchar_t* deviceID, bool isInputDevice, I
 }
 
 
-HRESULT WASAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosestPara)
+HRESULT WASAPICapture::InitClient(const QsAudioParam* para, QsAudioParam* pClosestPara)
 {
     HRESULT hr = S_FALSE;
     if (para)
     {
         do
         {
-            QsAudioPara audioParams = *para;
+            QsAudioParam audioParams = *para;
             if (IsAudioPlanarFormat(audioParams.sampleFormat) && pClosestPara)
                 audioParams.sampleFormat = toNonPlanarFormat(audioParams.sampleFormat);
 
@@ -141,7 +134,7 @@ HRESULT WASAPICapture::InitClient(const QsAudioPara* para, QsAudioPara* pClosest
     return hr;
 }
 
-HRESULT WASAPICapture::_InitClient(const WAVEFORMATEX* pcmFormat, QsAudioPara* pClosestPara)
+HRESULT WASAPICapture::_InitClient(const WAVEFORMATEX* pcmFormat, QsAudioParam* pClosestPara)
 {
     HRESULT              hr = S_FALSE;
     do
@@ -171,7 +164,7 @@ HRESULT WASAPICapture::_InitClient(const WAVEFORMATEX* pcmFormat, QsAudioPara* p
         if (FAILED(hr))
             break;
 
-        hr = client->GetService(__uuidof(IAudioRenderClient), (void**)&capture);
+        hr = client->GetService(__uuidof(IAudioCaptureClient), (void**)&capture);
         if (FAILED(hr))
             break;
         hr = client->GetService(__uuidof(IAudioStreamVolume), (void**)&volControl);
@@ -263,7 +256,7 @@ void WASAPICapture::captureThread()
     QmComInit();
 
     /* Output devices don't signal, so just make it check every 10 ms */
-    DWORD        dur = m_bInputDevice ? 3000 : 100;
+    DWORD        dur = m_bInputDevice ? 3000 : 10;
     HANDLE wait_array[] = { m_stopEvent, m_captureReadyEvent };
     for (;;)
     {
@@ -313,11 +306,16 @@ void WASAPICapture::captureData()
             data.nChannels = m_audioPara.nChannels;
 
             data.data[0] = (const uint8_t *)buffer;
-            data.frames = (uint32_t)frames;
-
+            data.nSamples = (uint32_t)frames;
             data.timestamp = GetTickCount();
 
-            m_audioCb(&data);
+            if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                m_audioCb(&data);
+            }
+            else {
+                m_audioCb(&data);
+            }
+            
         }
         m_capture->ReleaseBuffer(frames);
     }

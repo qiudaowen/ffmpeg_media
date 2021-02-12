@@ -10,10 +10,10 @@ public:
 	PacketQueue();
 	bool push(const AVPacketPtr& packet);
 	bool pop(AVPacketPtr& packet);
-
     void clear();
-    int packetCount() { return m_nb_packets; }
-    int packetSize() { return m_packetSize; }
+	int size() const { return m_queue.size();  }
+
+    int packetSize() const { return m_packetSize; }
 private:
 	std::queue<AVPacketPtr> m_queue;
 	uint32_t    m_nb_packets = 0;

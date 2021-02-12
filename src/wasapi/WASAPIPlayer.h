@@ -1,16 +1,17 @@
 #pragma once
 
-#include "ComPtr.hpp"
-#include "QcEvent.h"
 #include <thread>
 #include <mutex>
+#include "ComPtr.hpp"
+#include "QcEvent.h"
 
+typedef struct tWAVEFORMATEX WAVEFORMATEX;
 struct IMMDeviceEnumerator;
 struct IMMDevice;
 struct IAudioClient;
 struct IAudioRenderClient;
 struct IAudioStreamVolume;
-struct QsAudioPara;
+struct QsAudioParam;
 class QcRingBuffer;
 
 class WASAPIPlayer
@@ -19,7 +20,7 @@ public:
     WASAPIPlayer();
     ~WASAPIPlayer();
 
-    bool init(const wchar_t* deviceID, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
+    bool init(const wchar_t* deviceID, const QsAudioParam* para = nullptr, QsAudioParam* pClosestMatch = nullptr);
     bool start();
     void stop();
 
@@ -28,8 +29,8 @@ public:
     float Volume() const;
 protected:
     HRESULT InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *enumerator);
-    HRESULT InitClient(const QsAudioPara* para, QsAudioPara* pClosestMatch = nullptr);
-    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioPara* pClosestPara);
+    HRESULT InitClient(const QsAudioParam* para, QsAudioParam* pClosestMatch = nullptr);
+    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioParam* pClosestPara);
 
     void playThread();
     void fillPcmData();
@@ -38,10 +39,10 @@ protected:
     ComPtr<IMMDevice>           m_device;
     ComPtr<IAudioClient>        m_client;
     ComPtr<IAudioRenderClient>  m_render;
-    // IAudioEndpointVolume (Éè±¸ÒôÁ¿)  
-    // ISimpleAudioVolume Ö÷ÒôÁ¿?
-    // IAudioStreamVolume Á÷ÉùÒô ?
-    // IChannelAudioVolume ÉùµÀÉùÒô
+    // IAudioEndpointVolume (ï¿½è±¸ï¿½ï¿½ï¿½ï¿½)  
+    // ISimpleAudioVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½?
+    // IAudioStreamVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ?
+    // IChannelAudioVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     ComPtr<IAudioStreamVolume> m_volControl;
     float m_volFloat;
 

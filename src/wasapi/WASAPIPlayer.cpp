@@ -1,19 +1,12 @@
 #include "WASAPIPlayer.h"
+#include <mmdeviceapi.h>
+#include <Audioclient.h>
 #include "QcRingBuffer.h"
 #include "QsAudiodef.h"
 #include "QcComInit.h"
 #include "CoTaskMemPtr.hpp"
 #include "WASAPI_utils.h"
-#include <mmdeviceapi.h>
-#include <Audioclient.h>
 
-#ifdef min
-#undef min
-#endif
-
-#ifdef max
-#undef max
-#endif
 
 WASAPIPlayer::WASAPIPlayer()
 {
@@ -26,7 +19,7 @@ WASAPIPlayer::~WASAPIPlayer()
     stop();
 }
 
-bool WASAPIPlayer::init(const wchar_t* deviceID, const QsAudioPara* para, QsAudioPara* pClosestMatch)
+bool WASAPIPlayer::init(const wchar_t* deviceID, const QsAudioParam* para, QsAudioParam* pClosestMatch)
 {
     ComPtr<IMMDeviceEnumerator> enumerator;
     HRESULT res;
@@ -66,14 +59,14 @@ HRESULT WASAPIPlayer::InitDevice(const wchar_t* deviceID, IMMDeviceEnumerator *e
     return res;
 }
 
-HRESULT WASAPIPlayer::InitClient(const QsAudioPara* para, QsAudioPara* pClosestPara)
+HRESULT WASAPIPlayer::InitClient(const QsAudioParam* para, QsAudioParam* pClosestPara)
 {
     HRESULT hr = S_FALSE;
     if (para)
     {
         do 
         {
-            QsAudioPara audioParams = *para;
+            QsAudioParam audioParams = *para;
             if (IsAudioPlanarFormat(audioParams.sampleFormat) && pClosestPara)
                 audioParams.sampleFormat = toNonPlanarFormat(audioParams.sampleFormat);
 
@@ -130,7 +123,7 @@ HRESULT WASAPIPlayer::InitClient(const QsAudioPara* para, QsAudioPara* pClosestP
     return hr;
 }
 
-HRESULT WASAPIPlayer::_InitClient(const WAVEFORMATEX* pcmFormat, QsAudioPara* pClosestPara)
+HRESULT WASAPIPlayer::_InitClient(const WAVEFORMATEX* pcmFormat, QsAudioParam* pClosestPara)
 {
     HRESULT hr;
     do 

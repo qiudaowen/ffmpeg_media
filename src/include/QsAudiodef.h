@@ -1,35 +1,39 @@
-#ifndef QS_AUDIO_PARA_H
-#define QS_AUDIO_PARA_H
+#pragma once
 
 #include <stdint.h>
 
 enum QeSampleFormat
 {
-	eSampleFormatNone = -1,
-	eSampleFormatU8 = 0,
-	eSampleFormatS16,
-	eSampleFormatS32,
-	eSampleFormatFloat,
-	eSampleFormatDouble,
+	kSampleFormatNone = -1,
+	kSampleFormatU8 = 0,
+	kSampleFormatS16,
+	kSampleFormatS32,
+	kSampleFormatFloat,
+	kSampleFormatDouble,
 
-	eSampleFormatU8P,
-	eSampleFormatS16P,
-	eSampleFormatS32P,
-	eSampleFormatFloatP,
-	eSampleFormatDoubleP,
+	kSampleFormatU8P,
+	kSampleFormatS16P,
+	kSampleFormatS32P,
+	kSampleFormatFloatP,
+	kSampleFormatDoubleP,
+
+    kSampleFormatS64,
+    kSampleFormatS64P,        ///< signed 64 bits, planar
 };
-struct QsAudioPara
+struct QsAudioParam
 {
+    int codecID = 0;
+    int bitRate = 0;
 	int sampleRate = 0;
-	QeSampleFormat sampleFormat = eSampleFormatNone;
+	QeSampleFormat sampleFormat = kSampleFormatNone;
 	int nChannels = 0;
-	bool operator==(const QsAudioPara& para) const
+	bool operator==(const QsAudioParam& para) const
 	{
 		return sampleRate == para.sampleRate
 			&& sampleFormat == para.sampleFormat
 			&& nChannels == para.nChannels;
 	}
-	bool operator!=(const QsAudioPara& para) const
+	bool operator!=(const QsAudioParam& para) const
 	{
 		return !(*this == para);
 	}
@@ -43,7 +47,7 @@ struct QsAudioData
     int nChannels;
 
     const uint8_t* data[QmAudioPlanes];
-    uint32_t frames;
+    uint32_t nSamples;
 
     uint64_t timestamp;
 };
@@ -51,83 +55,82 @@ inline int getBytesPerSample(QeSampleFormat format)
 {
     switch (format)
     {
-    case eSampleFormatU8P:
-    case eSampleFormatU8:
+    case kSampleFormatU8P:
+    case kSampleFormatU8:
         return 1;
-    case eSampleFormatS16:
-    case eSampleFormatS16P:
+    case kSampleFormatS16:
+    case kSampleFormatS16P:
         return 2;
-    case eSampleFormatS32:
-    case eSampleFormatS32P:
+    case kSampleFormatS32:
+    case kSampleFormatS32P:
         return 4;
-    case eSampleFormatFloat:
-    case eSampleFormatFloatP:
+    case kSampleFormatFloat:
+    case kSampleFormatFloatP:
         return 4;
-    case eSampleFormatDouble:
-    case eSampleFormatDoubleP:
+    case kSampleFormatDouble:
+    case kSampleFormatDoubleP:
         return 8;
     }
     return 0;
 }
-inline int getAudioBufferSize(const QsAudioPara& para, int nb_samples)
+inline int getAudioBufferSize(QeSampleFormat format, int nChannels, int nb_samples)
 {
-	return getBytesPerSample(para.sampleFormat) * para.nChannels * nb_samples;
+	return getBytesPerSample(format) * nChannels * nb_samples;
 }
 inline QeSampleFormat toNonPlanarFormat(QeSampleFormat format)
 {
     switch (format)
     {
-    case eSampleFormatU8:
-    case eSampleFormatU8P:
-        return eSampleFormatU8;
-    case eSampleFormatS16:
-    case eSampleFormatS16P:
-        return eSampleFormatS16;
-    case eSampleFormatS32:
-    case eSampleFormatS32P:
-        return eSampleFormatS32;
-    case eSampleFormatFloat:
-    case eSampleFormatFloatP:
-        return eSampleFormatFloat;
-    case eSampleFormatDouble:
-    case eSampleFormatDoubleP:
-        return eSampleFormatDouble;
+    case kSampleFormatU8:
+    case kSampleFormatU8P:
+        return kSampleFormatU8;
+    case kSampleFormatS16:
+    case kSampleFormatS16P:
+        return kSampleFormatS16;
+    case kSampleFormatS32:
+    case kSampleFormatS32P:
+        return kSampleFormatS32;
+    case kSampleFormatFloat:
+    case kSampleFormatFloatP:
+        return kSampleFormatFloat;
+    case kSampleFormatDouble:
+    case kSampleFormatDoubleP:
+        return kSampleFormatDouble;
     }
-    return eSampleFormatNone;
+    return kSampleFormatNone;
 }
 inline QeSampleFormat toPlanarFormat(QeSampleFormat format)
 {
     switch (format)
     {
-    case eSampleFormatU8:
-    case eSampleFormatU8P:
-        return eSampleFormatU8P;
-    case eSampleFormatS16:
-    case eSampleFormatS16P:
-        return eSampleFormatS16P;
-    case eSampleFormatS32:
-    case eSampleFormatS32P:
-        return eSampleFormatS32P;
-    case eSampleFormatFloat:
-    case eSampleFormatFloatP:
-        return eSampleFormatFloatP;
-    case eSampleFormatDouble:
-    case eSampleFormatDoubleP:
-        return eSampleFormatDoubleP;
+    case kSampleFormatU8:
+    case kSampleFormatU8P:
+        return kSampleFormatU8P;
+    case kSampleFormatS16:
+    case kSampleFormatS16P:
+        return kSampleFormatS16P;
+    case kSampleFormatS32:
+    case kSampleFormatS32P:
+        return kSampleFormatS32P;
+    case kSampleFormatFloat:
+    case kSampleFormatFloatP:
+        return kSampleFormatFloatP;
+    case kSampleFormatDouble:
+    case kSampleFormatDoubleP:
+        return kSampleFormatDoubleP;
     }
-    return eSampleFormatNone;
+    return kSampleFormatNone;
 }
 inline bool IsAudioPlanarFormat(QeSampleFormat iFormat)
 {
     switch (iFormat)
     {
-    case eSampleFormatU8:
-    case eSampleFormatS16:
-    case eSampleFormatS32:
-    case eSampleFormatFloat:
-    case eSampleFormatDouble:
+    case kSampleFormatU8:
+    case kSampleFormatS16:
+    case kSampleFormatS32:
+    case kSampleFormatFloat:
+    case kSampleFormatDouble:
         return false;
     }
     return true;
 }
-#endif

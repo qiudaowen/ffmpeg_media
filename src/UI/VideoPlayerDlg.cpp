@@ -8,10 +8,13 @@
 #include "afxdialogex.h"
 #include "VideoPlayerModel.h"
 #include "CaptureModel.h"
+#include "RecordModel.h"
+#include "AudioMuxerModel.h"
 #include "VideoRenderWindow.h"
 #include "VideoPlayerApp.h"
 #include "QcComInit.h"
 #include "win/MsgWnd.h"
+#include "libmedia/FFmpegUtils.h"
 #include <vector>
 
 #ifdef _DEBUG
@@ -21,6 +24,7 @@
 enum {
 	kPlayTimerID = 1,
 	kCaptureTimerID,
+	kRecordTimerID,
 };
 
 
@@ -31,12 +35,12 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-// 对话框数据
+	// 对话框数据
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_ABOUTBOX };
 #endif
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
 // 实现
@@ -91,7 +95,7 @@ BEGIN_MESSAGE_MAP(CVideoPlayerDlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_WM_DROPFILES()
 	ON_WM_CLOSE()
-	
+
 	ON_BN_CLICKED(IDC_PLAY_PAUSE, &CVideoPlayerDlg::OnBnClickedButtonPlay)
 
 	ON_LBN_SELCHANGE(IDC_LIST_VIDEO, &CVideoPlayerDlg::OnLbnSelchangeListVideo)
@@ -146,14 +150,14 @@ BOOL CVideoPlayerDlg::OnInitDialog()
 		adjustControlPos();
 
 		SetTimer(kPlayTimerID, 500, NULL);
-	});
+		});
 
 	QmVideoRenderWindow->init(0, 0, 640, 480, m_hWnd);
 	QmVideoApp->init();
 	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
 
 	DragAcceptFiles(TRUE);
-	
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -319,7 +323,7 @@ void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		VideoPlayerModel* playerModel = QmVideoPlayerModel;
 		double fPos = playerModel->getProgress();
-		m_videoProgressSlider.SetPos(fPos * m_videoProgressSlider.GetRangeMax());
+		m_videoProgressSlider.SetPos((int32_t)(fPos * m_videoProgressSlider.GetRangeMax()) );
 
 		int curTime = playerModel->getCurTime();
 		int totalTime = playerModel->getTotalTime();
@@ -328,8 +332,12 @@ void CVideoPlayerDlg::OnTimer(UINT_PTR nIDEvent)
 		m_totalTime = CTimeSpan(totalTime / 1000).Format("%H:%M:%S");
 		UpdateData(FALSE);
 	}
-	else if (kCaptureTimerID == nIDEvent) {
-		QmCaptureModel->captureFrameSync();
+	else if (kRecordTimerID == nIDEvent && QmRecordModel)
+	{
+		int curTime = QmRecordModel->recordTime();
+		CString recordTime = CTimeSpan(curTime / 1000).Format("%H:%M:%S");
+		SetDlgItemText(IDC_RECORD, recordTime);
+		//UpdateData(FALSE);
 	}
 	CDialog::OnTimer(nIDEvent);
 }
@@ -372,7 +380,7 @@ void CVideoPlayerDlg::adjustControlPos()
 	CRect playBtnRect = getDlgItemRect(IDC_PLAY_PAUSE);
 	CRect volumeTextRect = getDlgItemRect(IDC_VOL_TEXT);
 	CRect sliderVolumeRect = getDlgItemRect(IDC_SLIDER_VOLUME);
-	
+
 	CRect videoListRect = getDlgItemRect(IDC_LIST_VIDEO);
 	CRect addVideoFileBtnRect = getDlgItemRect(IDC_ADD_VIDEOFILE);
 	CRect showVideoListBtnRect = getDlgItemRect(IDC_SHOW_LIST);
@@ -398,14 +406,14 @@ void CVideoPlayerDlg::adjustControlPos()
 		setDlgItemRect(IDC_LIST_VIDEO, totalW - videoFileListW, 0, videoFileListW, totalH - bottomItemH);
 
 	//底部栏
-	int bottomItemsTotalW = profileRect.Width() 
+	int bottomItemsTotalW = profileRect.Width()
 		+ captureRect.Width()
 		+ recordRect.Width()
-		+ hwEnableRect.Width() 
-		+ playBtnRect.Width() 
-		+ volumeTextRect.Width() 
-		+ sliderVolumeRect.Width() 
-		+ showVideoListBtnRect.Width() 
+		+ hwEnableRect.Width()
+		+ playBtnRect.Width()
+		+ volumeTextRect.Width()
+		+ sliderVolumeRect.Width()
+		+ showVideoListBtnRect.Width()
 		+ addVideoFileBtnRect.Width();
 	int halfSpaceW = (totalW - bottomItemsTotalW) / 2;
 	int bottomItemX = halfSpaceW;
@@ -422,7 +430,7 @@ void CVideoPlayerDlg::adjustControlPos()
 
 	moveDlgItem(IDC_PLAY_PAUSE, bottomItemX, bottomItemY);
 	bottomItemX += playBtnRect.Width();
-	moveDlgItem(IDC_VOL_TEXT,   bottomItemX, bottomItemY);
+	moveDlgItem(IDC_VOL_TEXT, bottomItemX, bottomItemY);
 	bottomItemX += volumeTextRect.Width();
 	moveDlgItem(IDC_SLIDER_VOLUME, bottomItemX, bottomItemY);
 	bottomItemX += sliderVolumeRect.Width();
@@ -441,22 +449,82 @@ void CVideoPlayerDlg::OnBnClickedHwEnable()
 	QmVideoPlayerModel->setHwEnable(m_bHwEnable);
 }
 
+void CVideoPlayerDlg::toggleCapture()
+{
+	bool bCapture = m_captureNotifyID || m_recordNotifyID;
+	if (bCapture)
+	{
+		if (QmCaptureModel->isStop()) {
+			QmCaptureModel->setDevice(QmVideoRenderWindow->device());
+			QmCaptureModel->setCaptureParam(1920, 1080, 60);
+			QmCaptureModel->start();
+		}
+		if (QmAudioMuxerModel->isStop()) {
+			QsAudioParam param;
+			param.sampleRate = 44100;
+			param.sampleFormat = kSampleFormatFloat;
+			param.nChannels = 2;
+			QmAudioMuxerModel->setParam(param);
+			QmAudioMuxerModel->start();
+		}
+	}
+	else
+	{
+		if (!QmCaptureModel->isStop())
+			QmCaptureModel->stop();
+		if (!QmAudioMuxerModel->isStop()) {
+			QmAudioMuxerModel->stop();
+		}
+	}
+}
+
 void CVideoPlayerDlg::OnBnClickedCapture()
 {
-	CapturCallback cb(QmVideoRenderWindow->device(), [this](ID3D11Texture2D* frame) {
-		QmVideoRenderWindow->beginRender();
-		QmVideoRenderWindow->drawTexture(frame, 0);
-		QmVideoRenderWindow->endRender();
-		});
-	QmCaptureModel->init(0, cb);
-	SetTimer(kCaptureTimerID, 16, NULL);
+	if (m_captureNotifyID == 0)
+	{
+		m_captureNotifyID = QmCaptureModel->addGPUFrameNotify([this](ID3D11Texture2D* frame) {
+			QmVideoRenderWindow->beginRender();
+			QmVideoRenderWindow->drawTexture(frame, 0);
+			QmVideoRenderWindow->endRender();
+			});
+	}
+	else {
+		QmCaptureModel->removeNotify(m_captureNotifyID);
+		m_captureNotifyID = 0;
+	}
+	toggleCapture();
 }
 void CVideoPlayerDlg::OnBnClickedRecord()
 {
-	int a = 0;
+	if (m_recordNotifyID == 0)
+	{
+		m_recordNotifyID = QmCaptureModel->addMemFrameNotify([this](int w, int h, int dxgiFormat, uint8_t* data, int stride) {
+			AVFrameRef frame = AVFrameRef::allocFrame(data, w, h, FFmpegUtils::fourccToFFmpegFormat(FOURCC_BGRA), FFmpegUtils::currentMilliSecsSinceEpoch());
+			QmRecordModel->pushVideoFrame(frame);
+			});
+
+		m_audioMuxerNotifyID = QmAudioMuxerModel->addNotify([this](const AVFrameRef& audioFrame) {
+			QmRecordModel->pushAudioFrame(audioFrame);
+			});
+
+		SetTimer(kRecordTimerID, 1000, nullptr);
+		QmRecordModel->start();
+	}
+	else {
+		QmAudioMuxerModel->removeNotify(m_audioMuxerNotifyID);
+		m_audioMuxerNotifyID = 0;
+
+		QmCaptureModel->removeNotify(m_recordNotifyID);
+		m_recordNotifyID = 0;
+
+		QmRecordModel->stop();
+		KillTimer(kRecordTimerID);
+		SetDlgItemTextW(IDC_RECORD, L"startRecord");
+	}
+	toggleCapture();
 }
 
-void CVideoPlayerDlg::OnBnClickedProfile() 
+void CVideoPlayerDlg::OnBnClickedProfile()
 {
 
 }

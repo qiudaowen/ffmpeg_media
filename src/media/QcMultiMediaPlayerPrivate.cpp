@@ -176,7 +176,7 @@ void QcMultiMediaPlayerPrivate::seek(int msTime)
 	if (m_pDemuxer == nullptr)
 		return;
 
-	//TODO: ÒÆµ½ Demuxer Ïß³Ì
+	//TODO: ç§»åˆ° Demuxer çº¿ç¨‹
 	int lastState = m_playState;
 	if (m_playState == ePlaying)
 		_synState(ePause);
@@ -346,7 +346,7 @@ void QcMultiMediaPlayerPrivate::videoDecodeThread()
 					iVideoQueueSize = m_videoQueue.size();
 					if (iVideoQueueSize > 0 && m_pNotify)
 					{
-						//¶ªÖ¡
+						//ä¸¢å¸§
 						while (m_videoQueue.front(playFrame) && diffToCurrentTime(playFrame) < 5)
 						{
 							--iVideoQueueSize;
@@ -454,6 +454,11 @@ void QcMultiMediaPlayerPrivate::audioDecodeThread()
 							--iQueueSize;
 							m_iAudioCurTime = playFrame.ptsMsTime();
 							m_audioQueue.pop(playFrame);
+
+							static int giTime = GetTickCount();
+							char buffer[256];
+							sprintf_s(buffer, "cur=%d pts=%d\n", GetTickCount() - giTime, m_iAudioCurTime);
+							OutputDebugStringA(buffer);
 							bPlay = true;
 						}
 					}

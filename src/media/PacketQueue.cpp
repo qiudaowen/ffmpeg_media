@@ -20,7 +20,6 @@ PacketQueue::PacketQueue()
 bool PacketQueue::push(const AVPacketPtr& packet)
 {
     m_queue.push(packet);
-    ++m_nb_packets;
     m_packetSize += packet->size;
     return true;
 }
@@ -31,7 +30,6 @@ bool PacketQueue::pop(AVPacketPtr& packet)
     {
         packet = m_queue.front();
         m_packetSize -= packet->size;
-        --m_nb_packets;
         m_queue.pop();
         return true;
     }
@@ -41,6 +39,5 @@ bool PacketQueue::pop(AVPacketPtr& packet)
 void PacketQueue::clear()
 {
     m_queue.swap(std::queue<AVPacketPtr>());
-    m_nb_packets = 0;
     m_packetSize = 0;
 }

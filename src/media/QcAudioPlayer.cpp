@@ -1,10 +1,10 @@
-#include "QcAudioPlayer.h"
 #include "wasapi/WASAPIPlayer.h"
+#include "QcAudioPlayer.h"
 
 struct QcAudioPlayerPrivate
 {
     bool m_isOpen = false;
-    QsAudioPara m_openParas;
+    QsAudioParam m_openParas;
     std::unique_ptr<WASAPIPlayer> m_player;
 };
 
@@ -19,7 +19,7 @@ QcAudioPlayer::~QcAudioPlayer()
     close();
 }
 
-bool QcAudioPlayer::open(const wchar_t* deviceID, const QsAudioPara* para, QsAudioPara* pClosestMatch)
+bool QcAudioPlayer::open(const wchar_t* deviceID, const QsAudioParam* para, QsAudioParam* pClosestMatch)
 {
 	close();
     m_ptr->m_player.reset(new WASAPIPlayer());
@@ -40,7 +40,7 @@ bool QcAudioPlayer::isOpen() const
 	return m_ptr->m_isOpen;
 }
 
-const QsAudioPara& QcAudioPlayer::getAudioPara() const
+const QsAudioParam& QcAudioPlayer::getAudioPara() const
 {
 	return m_ptr->m_openParas;
 }
@@ -67,7 +67,9 @@ void QcAudioPlayer::playAudio(const uint8_t* pcm, int nSamples)
 {
 	if (m_ptr->m_player)
 	{
-        m_ptr->m_player->playAudio(pcm, getAudioBufferSize(m_ptr->m_openParas, nSamples));
+        int nChannel = m_ptr->m_openParas.nChannels;
+        auto format = m_ptr->m_openParas.sampleFormat;
+        m_ptr->m_player->playAudio(pcm, getAudioBufferSize(format, nChannel, nSamples));
 	}   
 }
 

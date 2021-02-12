@@ -130,7 +130,7 @@ void VideoRenderWindow::drawFrame(const uint8_t* const datas[], const int dataSl
 			uint8_t* const dstDatas[] = { dstData };
 			int dstSlice[] = { dstDataSlice };
 
-			m_transFormat->transformat(texW, texH, forccFormat, datas, dataSlice
+			m_transFormat->transformat(texW, texH, FFmpegUtils::fourccToFFmpegFormat(forccFormat), datas, dataSlice
 				, w, h, FFmpegUtils::fourccToFFmpegFormat(FOURCC_BGRA), dstDatas, dstSlice);
 			});
 		break;
@@ -203,6 +203,11 @@ void VideoRenderWindow::onRender()
 		::ReleaseDC(m_hWnd, hDC);
 	}
 #endif
+}
+
+void VideoRenderWindow::postFrame(const AVFrameRef& frame)
+{
+	onVideoFrame(frame);
 }
 
 bool VideoRenderWindow::onVideoFrame(const AVFrameRef& frame)

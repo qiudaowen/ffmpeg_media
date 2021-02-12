@@ -23,6 +23,12 @@ struct QsMediaInfo
 	int iFileTotalTime;
 };
 
+struct QsTimeBase
+{
+	int32_t num;
+	int32_t den;
+};
+
 enum QsThreadState
 {
 	eReady = 0,
@@ -30,5 +36,3 @@ enum QsThreadState
 	ePause,
 	eExitThread,
 };
-
-#define QmStdMutexLocker(mutex1) std::lock_guard<std::mutex> QmUniqueVarName(mutex1)

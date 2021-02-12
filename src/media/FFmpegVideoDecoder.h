@@ -1,5 +1,4 @@
-#ifndef QC_FFMPEG_DECODER_H
-#define QC_FFMPEG_DECODER_H
+#pragma once
 
 #include "media_global.h"
 
@@ -39,4 +38,3 @@ protected:
 	AVCodec* m_pCodec = nullptr;
 	AVBufferRef * m_hw_device_ctx = nullptr;
 };
-#endif

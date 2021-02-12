@@ -1,7 +1,6 @@
-﻿#pragma once
+#pragma once
 
-#include "QcEvent.h"
-#include "QcCriticalLock.h"
+#include <mutex>
 #include <vector>
 #include <functional>
 
@@ -9,10 +8,10 @@ using Callback0 = std::function<void(void)>;
 class CoreRunloop
 {
 protected:
-	QcEvent m_exitEvent;
-    QcEvent m_wakeupEvent;
-    QcCriticalLock m_csLock;
+	std::mutex m_mutex;
+	std::condition_variable m_mutexNotify;
 	std::vector<Callback0> m_asynCallList;
+	bool m_quit = false;
 public:
 	CoreRunloop();
 	~CoreRunloop();
@@ -22,6 +21,4 @@ public:
 	void quit();
 	void run();
 	void runOnce();
-protected:
-    void calWaitTime();
 };

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1062
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VideoPlayer", "src\UI\VideoPlayer.vcxproj", "{146C4B23-4B37-4822-9BEB-351A955DD990}"
 EndProject
@@ -9,7 +9,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "media", "src\media\media.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "utils", "src\utils\utils.vcxproj", "{7AB10D06-7299-47FB-A987-BA7808DACEC3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{F2535465-FAB6-48B4-A78D-A4540886AD56}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wasapi", "src\wasapi\wasapi.vcxproj", "{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics", "src\graphics\graphics.vcxproj", "{2FB57471-4085-4718-8763-1D4DED4AA68F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "captureSdk", "src\capture\captureSdk.vcxproj", "{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "profile", "src\profile\profile.vcxproj", "{C9766E02-C088-405C-8423-1592533ADEE9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{549BB74E-35BC-496F-8E5E-C48F02F6AA3E}"
 	ProjectSection(SolutionItems) = preProject
 		src\include\ComPtr.hpp = src\include\ComPtr.hpp
 		src\include\CoTaskMemPtr.hpp = src\include\CoTaskMemPtr.hpp
@@ -32,16 +40,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{F253
 		src\include\WinHandle.hpp = src\include\WinHandle.hpp
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wasapi", "src\wasapi\wasapi.vcxproj", "{EBA3DC80-A087-4B77-BC5C-D72F736DF2C4}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "graphics", "src\graphics\graphics.vcxproj", "{2FB57471-4085-4718-8763-1D4DED4AA68F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "captureSdk", "src\capture\captureSdk.vcxproj", "{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}"
-EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -95,11 +94,22 @@ Global
 		{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}.Release|x64.Build.0 = Release|x64
 		{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}.Release|x86.ActiveCfg = Release|Win32
 		{2AABA903-BE99-4FB7-97E1-D28F589B1C6D}.Release|x86.Build.0 = Release|Win32
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Debug|x64.ActiveCfg = Debug|x64
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Debug|x64.Build.0 = Debug|x64
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Debug|x86.ActiveCfg = Debug|Win32
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Debug|x86.Build.0 = Debug|Win32
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Release|x64.ActiveCfg = Release|x64
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Release|x64.Build.0 = Release|x64
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Release|x86.ActiveCfg = Release|Win32
+		{C9766E02-C088-405C-8423-1592533ADEE9}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2A867D0D-71D9-44A4-AFD4-A206D420C54C}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal

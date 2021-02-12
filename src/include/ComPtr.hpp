@@ -150,7 +150,7 @@ public:
 	inline ComQIPtr(IUnknown *unk)
 	{
 		this->ptr = nullptr;
-		unk->QueryInterface(__uuidof(T), (void **)&this->ptr);
+		unk->QueryInterface(__uuidof(T), (void **)&this->ptr); 
 	}
 
 	inline ComPtr<T> &operator=(IUnknown *unk)

@@ -20,11 +20,12 @@ public:
 
 	ID3D11Device* device() const;
 
-	
 	bool drawTexture(ID3D11Texture2D* texture, int subResouce = 0);
 	void drawFrame(const uint8_t* const datas[], const int dataSlice[], int w, int h, int forccFormat);
 	void beginRender();
 	void endRender();
+
+	void postFrame(const AVFrameRef& frame);
 protected:
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);

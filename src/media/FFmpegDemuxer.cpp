@@ -91,7 +91,7 @@ void FFmpegDemuxer::openVideoStream(int i)
     if (AV_NOPTS_VALUE != m_pVideoStream->duration)
         m_mediaInfo.videoTotalTime = QmBaseTimeToMSTime(m_pVideoStream->duration, m_pVideoStream->time_base);
 
-    m_mediaInfo.rotation = get_rotation(m_pVideoStream);
+    m_mediaInfo.rotation = (int)get_rotation(m_pVideoStream);
     m_mediaInfo.frameRate = av_q2d(av_stream_get_r_frame_rate(m_pVideoStream));
     m_mediaInfo.videoWidth = p_codec_par->width;
     m_mediaInfo.videoHeight = p_codec_par->height;

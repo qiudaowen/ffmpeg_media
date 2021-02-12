@@ -1,9 +1,9 @@
-﻿#include "CoreRunloop.h"
+#include "CoreRunloop.h"
+#include "QmMacro.h"
 
 CoreRunloop::CoreRunloop()
 {
-    m_exitEvent.init();
-    m_wakeupEvent.init();
+
 }
 
 CoreRunloop::~CoreRunloop()
@@ -13,41 +13,26 @@ CoreRunloop::~CoreRunloop()
 
 void CoreRunloop::post(const Callback0& func)
 {
-    QmCsLocker(m_csLock);
+	QmStdMutexLocker(m_mutex);
     m_asynCallList.push_back(func);
-    m_wakeupEvent.setEvent();
+	m_mutexNotify.notify_all();
 }
 
 void CoreRunloop::quit()
 {
-    m_exitEvent.setEvent();
+	m_quit = true;
 }
 
 void CoreRunloop::run()
 {
 	bool bLoop = true;
-	MSG msg;
-	HANDLE handle[] = { m_exitEvent, m_wakeupEvent };
-	while (bLoop)
+	while (!m_quit)
 	{
+		{
+			std::unique_lock<std::mutex> lock(m_mutex);
+			m_mutexNotify.wait(lock);
+		}
 		runOnce();
-		while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-			{
-				bLoop = false;
-			}
-			else
-			{
-				::TranslateMessage(&msg);
-				::DispatchMessage(&msg);
-			}
-		}
-		DWORD result = ::MsgWaitForMultipleObjectsEx(2, handle, INFINITE, QS_ALLINPUT, MWMO_ALERTABLE);
-		if (result == (WAIT_OBJECT_0 + 0))
-		{
-			bLoop = false;
-		}
 	}
 	runOnce();
 }
@@ -56,9 +41,8 @@ void CoreRunloop::runOnce()
 {
 	std::vector<Callback0> temp;
 	{
-        QmCsLocker(m_csLock);
+        QmStdMutexLocker(m_mutex);
 		temp.swap(m_asynCallList);
-        m_wakeupEvent.resetEvent();
 	}
 	if (!temp.empty())
 	{

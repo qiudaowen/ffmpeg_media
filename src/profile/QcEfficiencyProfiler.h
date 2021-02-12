@@ -1,21 +1,19 @@
-﻿#ifndef QC_EFFICIENCY_PROFILER_HPP
+#ifndef QC_EFFICIENCY_PROFILER_HPP
 #define QC_EFFICIENCY_PROFILER_HPP
+
+#include "profile_global.h"
+#include <vector>
 
 #define __QmUniqueVarName(name, line) name##line
 #define _QmUniqueVarName(name, line) __QmUniqueVarName(name, line)
 #define QmUniqueVarName _QmUniqueVarName(defaultName, __LINE__)
 
-#define QmLocker(cs) QMutexLocker QmUniqueVarName(&cs)
-
 //#define QmProfilerOn
-#include <string>
-#include <vector>
-
 
 struct QsProfilerResult
 {
 	int* _pId;
-	std::string _psName;
+	char _psName[256];
 	int _iCount;
 	double _iTotalTime;
 	double _iMaxTime;
@@ -24,12 +22,12 @@ struct QsProfilerResult
 typedef std::vector<QsProfilerResult> ProfileResultList;
 
 
-extern void QfProfileBegin();
-extern void QfProfileEnd();
-extern void QfProfileResult(ProfileResultList& profileData);
-extern void QfProfileClear();
+PROFILE_API void QfProfileBegin();
+PROFILE_API void QfProfileEnd();
+PROFILE_API void QfProfileResult(ProfileResultList& profileData);
+PROFILE_API void QfProfileClear();
 
-class QcEfficiencyProfiler
+class PROFILE_API QcEfficiencyProfiler
 {
 	QcEfficiencyProfiler(const QcEfficiencyProfiler&);
 	void operator=(const QcEfficiencyProfiler&);
@@ -37,7 +35,8 @@ public:
 	explicit QcEfficiencyProfiler(int* pId, const char* psName, ...);
 	~QcEfficiencyProfiler();
 protected:
-	int m_iFragmentID;
+	int64_t m_iBeginTime;
+	int m_profileID;
 };
 
 #ifdef QmProfilerOn

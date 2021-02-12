@@ -14,3 +14,6 @@ struct QsBitSet
 protected:
 	unsigned int bits[(size + QmBitUnit - 1) / QmBitUnit];
 };
+
+#define QmBitTest(bit, ptr) ( ((unsigned char*)ptr)[bit/8] & (1<<(bit%8)))
+#define QmBitSet(bit, ptr)  ((unsigned char*)ptr)[bit/8] |= (1 << (bit & (8 - 1)))

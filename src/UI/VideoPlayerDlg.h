@@ -1,4 +1,4 @@
-﻿
+
 // VideoPlayerDlg.h: 头文件
 //
 
@@ -56,6 +56,8 @@ public:
 	afx_msg void OnBnClickedProfile();
 
 protected:
+	void toggleCapture();
+protected:
 	QcComInit comInit;
 
 	bool m_bInitDialog = false;
@@ -71,5 +73,10 @@ public:
 	CNiceSliderCtrl m_volSliderCtrl;
 	CString m_curTime;
 	CString m_totalTime;
+	CString m_recordTime;
 	BOOL m_bHwEnable;
+
+	int32_t m_captureNotifyID = 0;
+	int32_t m_recordNotifyID = 0;
+	int32_t m_audioMuxerNotifyID = 0;
 };

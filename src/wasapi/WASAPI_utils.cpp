@@ -4,20 +4,20 @@
 #include <mmdeviceapi.h>
 #include <Mmreg.h>
 
-bool WASAPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWaveFormat)
+bool WASAPI_utils::toWAVEFORMATPCMEX(const QsAudioParam& paras, WAVEFORMATEX* pWaveFormat)
 {
     WAVEFORMATEX* format = pWaveFormat;
     switch (paras.sampleFormat)
     {
-    case eSampleFormatU8:
+    case kSampleFormatU8:
         format->wFormatTag = WAVE_FORMAT_PCM;
         format->wBitsPerSample = 8;
         break;
-    case eSampleFormatS16:
+    case kSampleFormatS16:
         format->wFormatTag = WAVE_FORMAT_PCM;
         format->wBitsPerSample = 16;
         break;
-    case eSampleFormatFloat:
+    case kSampleFormatFloat:
         format->wFormatTag = WAVE_FORMAT_IEEE_FLOAT;
         format->wBitsPerSample = 32;
         break;
@@ -32,19 +32,19 @@ bool WASAPI_utils::toWAVEFORMATPCMEX(const QsAudioPara& paras, WAVEFORMATEX* pWa
     return true;
 }
 
-bool WASAPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* pUseFormat)
+bool WASAPI_utils::fromWAVEFORMATPCMEX(QsAudioParam& paras, const WAVEFORMATEX* pUseFormat)
 {
     bool bOk = true;
     switch (pUseFormat->wFormatTag)
     {
     case WAVE_FORMAT_PCM:
         if (pUseFormat->wBitsPerSample == 8)
-            paras.sampleFormat = eSampleFormatU8;
+            paras.sampleFormat = kSampleFormatU8;
         else
-            paras.sampleFormat = eSampleFormatS16;
+            paras.sampleFormat = kSampleFormatS16;
         break;
     case WAVE_FORMAT_IEEE_FLOAT:
-        paras.sampleFormat = eSampleFormatFloat;
+        paras.sampleFormat = kSampleFormatFloat;
         break;
     case WAVE_FORMAT_EXTENSIBLE:
     {
@@ -52,13 +52,13 @@ bool WASAPI_utils::fromWAVEFORMATPCMEX(QsAudioPara& paras, const WAVEFORMATEX* p
         if (pExFormat->SubFormat == KSDATAFORMAT_SUBTYPE_PCM)
         {
             if (pUseFormat->wBitsPerSample == 8)
-                paras.sampleFormat = eSampleFormatU8;
+                paras.sampleFormat = kSampleFormatU8;
             else 
-                paras.sampleFormat = eSampleFormatS16;
+                paras.sampleFormat = kSampleFormatS16;
         }
         else if (pExFormat->SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
         {
-            paras.sampleFormat = eSampleFormatFloat;
+            paras.sampleFormat = kSampleFormatFloat;
         }
         else
         {

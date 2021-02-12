@@ -136,7 +136,7 @@ bool D3D11Texture::updateFromShareHandle(HANDLE shareHandle)
 		m_resourceViewPlanes[0] = createTex2DResourceView(m_d3d11Device, m_texturePlanes[0], desc.Format);
 		break;
 	}
-	
+	return true;
 }
 
 bool D3D11Texture::updateFromTexArray(ID3D11Texture2D* tex, int index)
@@ -346,7 +346,7 @@ void D3D11Texture::createRGBTexture(int width, int height, int dxgiFormat)
 bool D3D11Texture::updateRGB32(const uint8_t* srcData, int srcSlice, int w, int h, int dxgiFormat)
 {
 	return lockRGB32(w, h, dxgiFormat, [&](uint8_t* dstData, int dstSlice){
-		video::CopyPlane(dstData, dstSlice, srcData, srcSlice, w, h);
+		video::CopyPlane(dstData, dstSlice, srcData, srcSlice, w * 4, h);
 	});
 }
 
@@ -368,7 +368,9 @@ bool D3D11Texture::lockRGB32(int w, int h, int dxgiFormat, std::function<void(ui
 		return false;
 
 	cb((uint8_t*)res.pData, (int)res.RowPitch);
-	//video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, data, dataSlice, w, h);
+	//video::CopyPlane((uint8_t*)res.pData, (int)res.RowPitch, data, dataSlice, w * 4, h);
 
 	m_d3d11DeviceContext->Unmap(m_texturePlanes[0], 0);
+
+	return true;
 }

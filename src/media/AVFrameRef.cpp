@@ -31,7 +31,7 @@ AVFrameRef AVFrameRef::allocFrame()
 	return ret;
 }
 
-AVFrameRef AVFrameRef::allocFrame(int w, int h, int format, int pts)
+AVFrameRef AVFrameRef::allocFrame(int w, int h, int format, int64_t pts)
 {
 	AVFrameRef ret = allocFrame();
 	ret->width = w;
@@ -43,12 +43,26 @@ AVFrameRef AVFrameRef::allocFrame(int w, int h, int format, int pts)
 	return ret;
 }
 
-AVFrameRef AVFrameRef::allocAudioFrame(int nb_samples, int nChannel, int format, int pts)
+AVFrameRef AVFrameRef::allocFrame(const uint8_t* data, int w, int h, int format, int64_t pts)
+{
+	AVFrameRef dstFrame = allocFrame(w, h, format, pts);
+
+	AVFrame srcFrame = {0};
+	srcFrame.width = w;
+	srcFrame.height = h;
+	srcFrame.format = format;
+	av_image_fill_arrays(srcFrame.data, srcFrame.linesize, data, (AVPixelFormat)format, w, h, 1);
+	av_frame_copy(dstFrame, &srcFrame);
+	return dstFrame;
+}
+
+AVFrameRef AVFrameRef::allocAudioFrame(int nb_samples, int sampleRate, int nChannel, int format, int64_t pts)
 {
     AVFrameRef ret = allocFrame();
     ret->nb_samples = nb_samples;
     ret->channel_layout = av_get_default_channel_layout(nChannel);
     ret->format = format;
+	ret->sample_rate = sampleRate;
     ret->pts = pts;
     av_frame_get_buffer(ret, 0);
     return ret;
@@ -104,6 +118,11 @@ bool AVFrameRef::isHWFormat() const
 {
     //
 	return m_pAVFrame ? m_pAVFrame->format == AV_PIX_FMT_D3D11: false;
+}
+
+int AVFrameRef::sampleRate() const
+{
+	return m_pAVFrame ? m_pAVFrame->sample_rate : 0;
 }
 
 int AVFrameRef::sampleCount() const

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="direct3d11\D3D11Device.cpp" />
     <ClCompile Include="direct3d11\D3D11Texture.cpp" />
+    <ClCompile Include="direct3d11\D3D11TexureToMem.cpp" />
     <ClCompile Include="direct3d11\ShaderResource.cpp" />
     <ClCompile Include="direct3d11\VertexBuffers.cpp" />
     <ClCompile Include="dxgi\DxgiUtils.cpp" />
@@ -28,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="direct3d11\D3D11Device.h" />
     <ClInclude Include="direct3d11\D3D11Texture.h" />
+    <ClInclude Include="direct3d11\D3D11TexureToMem.h" />
     <ClInclude Include="direct3d11\ShaderResource.h" />
     <ClInclude Include="direct3d11\shaders_d3d11.h" />
     <ClInclude Include="direct3d11\VertexBuffers.h" />

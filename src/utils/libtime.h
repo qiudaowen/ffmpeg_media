@@ -20,7 +20,7 @@ namespace libtime
 		uint32_t elapsedMS(bool bRestart = false)
 		{
 			auto diff = elapsed(bRestart);
-			return duration_cast<milliseconds>(diff).count();
+			return (uint32_t)duration_cast<milliseconds>(diff).count();
 		}
 		steady_clock::duration elapsed(bool bRestart = false)
 		{
@@ -28,6 +28,15 @@ namespace libtime
 			if (bRestart)
 				restart();
 			return ret;
+		}
+		//ms
+		static int64_t currentMilliSecsSinceEpoch()
+		{
+			using namespace std::chrono;
+			auto timePoint = steady_clock::now();
+			auto cur = timePoint.time_since_epoch();
+			milliseconds ms = duration_cast<milliseconds>(cur);
+			return (int)ms.count();
 		}
 	protected:
 		steady_clock::time_point m_startTime;
@@ -70,7 +79,7 @@ namespace libtime
 			auto delta = duration_cast<milliseconds>(diff).count();
 			if (delta >= 1000)
 			{
-				m_fps = m_frames * 1000.0/delta;
+				m_fps = m_frames * 1000.0 / delta;
 				m_startTime = now;
 				m_frames = 0;
 				return true;

@@ -1,18 +1,19 @@
 #pragma once
 
-#include "ComPtr.hpp"
-#include "QcEvent.h"
-#include "QsAudiodef.h"
 #include <thread>
 #include <mutex>
 #include <functional>
+#include "ComPtr.hpp"
+#include "QcEvent.h"
+#include "QsAudiodef.h"
 
+typedef struct tWAVEFORMATEX WAVEFORMATEX;
 struct IMMDeviceEnumerator;
 struct IMMDevice;
 struct IAudioClient;
 struct IAudioCaptureClient;
 struct IAudioStreamVolume;
-struct QsAudioPara;
+struct QsAudioParam;
 struct QsAudioData;
 class QcRingBuffer;
 
@@ -25,7 +26,7 @@ public:
     ~WASAPICapture();
 
     void setCaptureCb(WSAPICaptureCb&& cb);
-    bool init(const wchar_t* deviceID, bool bInputDevice, const QsAudioPara* para = nullptr, QsAudioPara* pClosestMatch = nullptr);
+    bool init(const wchar_t* deviceID, bool bInputDevice, const QsAudioParam* para = nullptr, QsAudioParam* pClosestMatch = nullptr);
     bool start();
     void stop();
 
@@ -33,8 +34,8 @@ public:
     float Volume() const;
 protected:
     HRESULT InitDevice(const wchar_t* deviceID, bool isInputDevice, IMMDeviceEnumerator *enumerator);
-    HRESULT InitClient(const QsAudioPara* para, QsAudioPara* pClosestMatch = nullptr);
-    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioPara* pClosestPara);
+    HRESULT InitClient(const QsAudioParam* para, QsAudioParam* pClosestMatch = nullptr);
+    HRESULT _InitClient(const WAVEFORMATEX* pFormat, QsAudioParam* pClosestPara);
 
     void captureThread();
     void captureData();
@@ -43,17 +44,17 @@ protected:
     ComPtr<IAudioClient>        m_client;
     ComPtr<IAudioClient>        m_audio_render_client_for_loopback;
     ComPtr<IAudioCaptureClient>  m_capture;
-    // IAudioEndpointVolume (Éè±¸ÒôÁ¿)  
-    // ISimpleAudioVolume Ö÷ÒôÁ¿?
-    // IAudioStreamVolume Á÷ÉùÒô ?
-    // IChannelAudioVolume ÉùµÀÉùÒô
+    // IAudioEndpointVolume (ï¿½è±¸ï¿½ï¿½ï¿½ï¿½)  
+    // ISimpleAudioVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½?
+    // IAudioStreamVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ?
+    // IChannelAudioVolume ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     ComPtr<IAudioStreamVolume> m_volControl;
     float m_volFloat;
 
     QcEvent m_stopEvent;
     QcEvent m_captureReadyEvent;
     std::thread m_captureThread;
-    QsAudioPara m_audioPara;
+    QsAudioParam m_audioPara;
     WSAPICaptureCb m_audioCb;
 
     bool m_bInputDevice = false;

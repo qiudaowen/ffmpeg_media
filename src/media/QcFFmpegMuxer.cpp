@@ -1,329 +1,302 @@
-﻿#include "QmMacro.h"
 #include "QcFFmpegMuxer.h"
-#include "x264.h"
-#include <dwbase/log.h>
+#include "FFmpegUtils.h"
 
-enum
+extern "C"
 {
-	AUDIO_BUF_FLAG = 0x01,
-	VIDEO_BUF_FLAG = 0x02,
-};
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
+}
 
 QcFFmpegMuxer::QcFFmpegMuxer()
-	: m_fmt(0),
-	m_oc(0),
-	m_audio_st(0),
-	m_video_st(0),
-	m_width(640),
-	m_height(480),
-	m_fps(10),
-	m_channels(2),
-	m_audio_bits(16),
-	m_audio_samples(44100),
-	m_audio_bitrate(128),
-	m_fileLength(0),
-	m_dwStartTime(0),
-	m_dwStartTimeAudio(0)
+	: m_oc(0)
+	, m_audioStream(0)
+	, m_videoStream(0)
+	, m_fileLength(0)
+	, m_startTimeMs(AV_NOPTS_VALUE)
 {
+	m_videoParam.width = 0;
+	m_videoParam.height = 0;
 
+	m_audioParam.sampleRate = 0;
 }
 
 QcFFmpegMuxer::~QcFFmpegMuxer()
 {
-	StopWaitFor();
 	close();
 }
 
-void QcFFmpegMuxer::setVideoHeader(const uint8_t *pbuf, int len)
+void QcFFmpegMuxer::setVideoHeader(const uint8_t* pbuf, int len)
 {
 	if (len <= 0 || pbuf == NULL)
 		return;
 
-	m_headBuffer.write(pbuf, len);
+	m_videoHeadBuffer.write(pbuf, len);
 }
 
-void QcFFmpegMuxer::setVideoFormat(int width, int height, int fps, int bitrate)
+void QcFFmpegMuxer::setAudioHeader(const uint8_t* pbuf, int len)
 {
-	m_width = width;
-	m_height = height;
-	m_fps = fps;
-	m_bitrate = bitrate;
+	if (len <= 0 || pbuf == NULL)
+		return;
+
+	m_audioHeadBuffer.write(pbuf, len);
 }
 
-void QcFFmpegMuxer::setAudioFormat(unsigned char channels, unsigned short bits, int samples, int bitrate)
+void QcFFmpegMuxer::setVideoCodecTimeBase(const QsTimeBase& timebase)
 {
-	m_channels = channels;
-	m_audio_bits = bits;
-	m_audio_samples = samples;
-	m_audio_bitrate = bitrate;
+	m_videoTimebase = timebase;
+}
+void QcFFmpegMuxer::setAudioCodecTimeBase(const QsTimeBase& timebase)
+{
+	m_audioTimebase = timebase;
 }
 
-
-bool QcFFmpegMuxer::open(const char *file)
+void QcFFmpegMuxer::setVideoFormat(const QsVideoParam& param)
 {
-	avformat_alloc_output_context2(&m_oc, NULL, NULL, file);
-	if (!m_oc) {
-		avformat_alloc_output_context2(&m_oc, NULL, "mp4", file);
+	m_videoParam = param;
+}
+
+void QcFFmpegMuxer::setAudioFormat(const QsAudioParam& param)
+{
+	m_audioParam = param;
+}
+
+bool QcFFmpegMuxer::open(const char* file)
+{
+	close();
+	do
+	{
+		AVOutputFormat* output_format = av_guess_format(nullptr, file, nullptr);
+		if (output_format == nullptr) {
+			break;
+		}
+		avformat_alloc_output_context2(&m_oc, output_format, nullptr, nullptr);
 		if (!m_oc) {
 			return false;
 		}
-	}
 
-	m_fmt = m_oc->oformat;
-	if (!m_fmt) {
-		return false;
-	}
-
-	if (m_fmt->video_codec == AV_CODEC_ID_NONE ||
-		m_fmt->audio_codec == AV_CODEC_ID_NONE)
-	{
-		return false;
-	}
-
-	m_fmt->audio_codec = AV_CODEC_ID_MP3;
-	m_fmt->video_codec = AV_CODEC_ID_H264;
-	if (!add_video_stream(m_fmt->video_codec) ||
-		!add_audio_stream(m_fmt->audio_codec))
-	{
-		return false;
-	}
-
-	if (!(m_fmt->flags & AVFMT_NOFILE)) {
-		int ret = avio_open(&m_oc->pb, file, AVIO_FLAG_WRITE);
-		if (ret < 0) {
-			return false;
+		if (m_videoParam.width > 0 && m_videoParam.height > 0) {
+			addVideoStream();
 		}
-	}
+		if (m_audioParam.sampleRate > 0) {
+			addAudioStream();
+		}
 
-	m_dataHandle = CreateEventW(NULL, FALSE, FALSE, NULL);
+		if (!(m_oc->oformat->flags & AVFMT_NOFILE)) {
+			int ret = avio_open(&m_oc->pb, file, AVIO_FLAG_WRITE);
+			if (ret < 0) {
+				return false;
+			}
+		}
 
-	m_video_st->codec->extradata_size = m_headBuffer.getDataSize();
-	m_video_st->codec->extradata = m_headBuffer.data();
+		avformat_write_header(m_oc, NULL);
 
-	avformat_write_header(m_oc, NULL);
+		m_fileLength = 0;
 
-	m_fileLength = 0;
-	m_dwStartTime = 0;
-	m_lastpts = 0;
+		return true;
+	} while (0);
 
-	return true;
+	close();
+	return false;
 }
 
 void QcFFmpegMuxer::close()
 {
 	if (m_oc) {
-		if (m_fileLength > 0) av_write_trailer(m_oc);
-
-		close_video();
-		close_audio();
-
-		for (unsigned int i = 0; i < m_oc->nb_streams; i++) {
-			av_freep(&m_oc->streams[i]->codec);
-			av_freep(&m_oc->streams[i]);
+		if (m_fileLength > 0) {
+			int ret = av_write_trailer(m_oc);
+			ret = ret;
 		}
 
-		if (m_oc->pb && (!(m_fmt->flags & AVFMT_NOFILE))) {
-			avio_close(m_oc->pb);
+		if (m_oc->pb && (!(m_oc->oformat->flags & AVFMT_NOFILE))) {
+			avio_closep(&(m_oc->pb));
 		}
-		av_free(m_oc);
+
+		avformat_free_context(m_oc);
 		m_oc = NULL;
 	}
+	m_startTimeMs = AV_NOPTS_VALUE;
+	m_muxerTime = 0;
 }
 
-void QcFFmpegMuxer::close_audio()
+bool QcFFmpegMuxer::newStream(AVCodecID id, AVStream** stream)
 {
-	if (m_audio_st) 
-	{
-		avcodec_close(m_audio_st->codec);
-		m_audio_st = NULL;
-	}
-}
-void QcFFmpegMuxer::close_video()
-{
-	if (m_video_st) 
-	{
-		avcodec_close(m_video_st->codec);
-		m_video_st = NULL;
-	}
-}
-
-bool QcFFmpegMuxer::add_video_stream(enum AVCodecID codec_id) 
-{
-	m_video_st = avformat_new_stream(m_oc, NULL);
-	if (!m_video_st) {
+	AVCodec* codec = avcodec_find_encoder(id);
+	if (!codec) {
 		return false;
 	}
+	*stream = avformat_new_stream(m_oc, codec);
+	if (!*stream) {
+		return false;
+	}
+	(*stream)->id = m_oc->nb_streams - 1;
+	return true;
+}
 
-	m_video_st->id = m_oc->nb_streams - 1;
-	AVCodecContext *c = m_video_st->codec;
-	c->codec_id = codec_id;
-	c->codec_type = AVMEDIA_TYPE_VIDEO;
-	c->bit_rate = m_bitrate * 1000;
-	c->width = m_width;
-	c->height = m_height;
+bool QcFFmpegMuxer::addVideoStream()
+{
+	if (!newStream((AVCodecID)m_videoParam.codecID, &m_videoStream))
+		return false;
 
-	c->time_base.den = 1000;
-	c->time_base.num = 1;
-	m_video_st->time_base = c->time_base;
-	c->gop_size = static_cast<int>(m_fps); /* emit one intra frame every second */
-	c->pix_fmt = AV_PIX_FMT_YUV420P;
+	m_oc->oformat->video_codec = (AVCodecID)m_videoParam.codecID;
+#if 0
+	AVCodecParameters* codecpar = m_videoStream->codecpar;
+	codecpar->codec_id = m_oc->oformat->video_codec;
+	codecpar->bit_rate = m_videoParam.bitRate;
+	codecpar->width = m_videoParam.width;
+	codecpar->height = m_videoParam.height;
+	codecpar->extradata = m_videoHeadBuffer.data();
+	codecpar->extradata_size = m_videoHeadBuffer.size();
+#endif
 
+	AVCodecContext* context = m_videoStream->codec;
+	context->bit_rate = m_videoParam.bitRate;
+	context->width = m_videoParam.width;
+	context->height = m_videoParam.height;
+	context->coded_width = m_videoParam.width;
+	context->coded_height = m_videoParam.height;
+	context->time_base = { m_videoTimebase.num, m_videoTimebase.den };
+
+	if (m_videoHeadBuffer.size()) {
+		context->extradata = (uint8_t*)av_memdup(m_videoHeadBuffer.data(), m_videoHeadBuffer.size());
+	}
+	else {
+		context->extradata = nullptr;
+	}
+	context->extradata_size = m_videoHeadBuffer.size();
+	/* Some formats want stream headers to be separate. */
 	if (m_oc->oformat->flags & AVFMT_GLOBALHEADER)
-		c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+		context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	// avcodec_parameters_from_context
+
+	m_videoStream->time_base = context->time_base;
+	m_videoStream->avg_frame_rate = av_inv_q(m_videoStream->time_base);
 
 	return true;
 }
 
-bool QcFFmpegMuxer::add_audio_stream(enum AVCodecID codec_id)
+bool QcFFmpegMuxer::addAudioStream()
 {
-	m_audio_st = avformat_new_stream(m_oc, NULL);
-	if (!m_audio_st) {
+	if (!newStream((AVCodecID)m_audioParam.codecID, &m_audioStream))
 		return false;
-	}
 
-	m_audio_st->id = m_oc->nb_streams - 1;
-	AVCodecContext *c = m_audio_st->codec;
-	c->codec_id = codec_id;
-	c->codec_type = AVMEDIA_TYPE_AUDIO;
-	c->sample_fmt = AV_SAMPLE_FMT_S16;
-	c->bit_rate = m_audio_bitrate;
-	c->sample_rate = m_audio_samples;
-	c->channels = m_channels;
-	c->time_base.den = m_audio_samples;
-	c->time_base.num = 1;
+	int channel_layout = av_get_default_channel_layout(m_audioParam.nChannels);
+	//AVlib default channel layout for 4 channels is 4.0 ; fix for quad
+	if (m_audioParam.nChannels == 4)
+		channel_layout = av_get_channel_layout("quad");
+	//AVlib default channel layout for 5 channels is 5.0 ; fix for 4.1
+	if (m_audioParam.nChannels == 5)
+		channel_layout = av_get_channel_layout("4.1");
 
+	m_oc->oformat->audio_codec = (AVCodecID)m_audioParam.codecID;
+#if 0
+	AVCodecParameters* codecpar = m_audioStream->codecpar;
+	codecpar->bit_rate = m_audioParam.bitRate;
+	codecpar->sample_rate = m_audioParam.sampleRate;
+	codecpar->channels = m_audioParam.nChannels;
+	codecpar->channel_layout = channel_layout;
+	codecpar->extradata = m_audioHeadBuffer.data();
+	codecpar->extradata_size = m_audioHeadBuffer.size();
+#endif
+
+	AVCodecContext* context = m_audioStream->codec;
+	context->bit_rate = m_audioParam.bitRate;
+	context->channels = m_audioParam.nChannels;
+	context->sample_rate = m_audioParam.sampleRate;
+	context->sample_fmt = (AVSampleFormat)FFmpegUtils::toFFmpegAudioFormat(m_audioParam.sampleFormat);
+	context->time_base = { m_audioTimebase.num, m_audioTimebase.den };
+	context->extradata = m_audioHeadBuffer.data();
+	context->extradata_size = m_audioHeadBuffer.size();
+	context->channel_layout = channel_layout;
+	/* Some formats want stream headers to be separate. */
 	if (m_oc->oformat->flags & AVFMT_GLOBALHEADER)
-		c->flags |= (CODEC_FLAG_GLOBAL_HEADER | AVFMT_VARIABLE_FPS);
+		context->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	// avcodec_parameters_from_context
+	m_audioStream->time_base = context->time_base;
 	return true;
 }
 
-void QcFFmpegMuxer::addAudio(QcMediaBuffer& buffer)
+bool QcFFmpegMuxer::writeVideo(int32_t pts, const uint8_t* buf, int size, bool bKeyFrame)
 {
-	buffer.m_type = AUDIO_BUF_FLAG;
-	QmCsLocker(m_cs);
-	m_bufferQueue.push_back_swap(buffer, true);
-	::SetEvent(m_dataHandle);
+	return writeVideo(pts, pts, buf, size, bKeyFrame);
 }
 
-void QcFFmpegMuxer::addVideo(QcMediaBuffer& buffer)
+bool QcFFmpegMuxer::writeVideo(int32_t pts, int32_t dts, const uint8_t* buf, int size, bool bKeyFrame)
 {
-	buffer.m_type = VIDEO_BUF_FLAG;
-	QmCsLocker(m_cs);
-	m_bufferQueue.push_back_swap(buffer, true);
-	::SetEvent(m_dataHandle);
-}
-
-void QcFFmpegMuxer::OnRun()
-{
-	while (1)
-	{
-		DWORD ret = WaitFor(&m_dataHandle, 1);
-		if (ret == WAIT_OBJECT_0)
-		{
-			flush();
-		}
-		else
-		{
-			break;
-		}
-	}
-	flush();
-}
-
-void QcFFmpegMuxer::flush()
-{
-	while (1)
-	{
-		{
-			QmCsLocker(m_cs);
-			if (!m_bufferQueue.pop_swap(m_mediaBuffer))
-				break;
-			QmAssertLogBefore(m_mediaBuffer.m_type == AUDIO_BUF_FLAG || m_mediaBuffer.m_type == VIDEO_BUF_FLAG);
-		}
-		if (m_mediaBuffer.m_type == AUDIO_BUF_FLAG)
-			writeAudio((uint32_t)m_mediaBuffer.m_tm, m_mediaBuffer.data(), m_mediaBuffer.getDataSize());
-		else if (m_mediaBuffer.m_type == VIDEO_BUF_FLAG)
-			writeVideo((uint32_t)m_mediaBuffer.m_tm, m_mediaBuffer.data(), m_mediaBuffer.getDataSize(), m_mediaBuffer.m_flag);
-		else
-		{
-			QmAssertLogBefore(false);
-		}
-	}
-}
-
-bool QcFFmpegMuxer::writeVideo(unsigned int pts, uint8_t *buf, int size, int flag)
-{
-	if (!buf || size < 0 || !m_oc || !m_video_st) {
-		QmAssertLogBefore(false);
+	if (!buf || size < 0 || !m_oc || !m_videoStream) {
 		return false;
 	}
 
-	if (m_dwStartTime == 0) {
-		m_dwStartTime = pts;
-		m_frameCount = 0;
+	if (!m_foundKeyFrame)
+	{
+		if (!bKeyFrame)
+			return false;
+		m_foundKeyFrame = true;
 	}
+
+	AVRational timebase = m_videoStream->codec->time_base;
+	int64_t timeMs = QmBaseTimeToMSTime(pts, timebase);
+	int64_t timeDtsMs = QmBaseTimeToMSTime(dts, timebase);
+	if (m_startTimeMs == AV_NOPTS_VALUE)
+	{
+		m_startTimeMs = timeMs;
+	}
+
+	timeMs -= m_startTimeMs;
+	timeDtsMs -= m_startTimeMs;
+	if (timeMs > m_muxerTime.load())
+		m_muxerTime.store(timeMs);
 
 	AVPacket pkt;
 	av_init_packet(&pkt);
-
-	pkt.stream_index = m_video_st->index;
-	pkt.data = buf;
+	pkt.stream_index = m_videoStream->index;
+	pkt.data = (uint8_t*)buf;
 	pkt.size = size;
-	pkt.pts = pts - m_dwStartTime;
-	av_packet_rescale_ts(&pkt, m_video_st->codec->time_base, m_video_st->time_base);
-	pkt.dts = pkt.pts;
+	pkt.pts = QmMSTimeToBaseTime(timeMs, m_videoStream->time_base);
+	pkt.dts = QmMSTimeToBaseTime(timeDtsMs, m_videoStream->time_base);
 
-	//  Utils::DebugPrint("writeVideo m_dwStartTime:%d pkt.pts: %d\n", m_dwStartTime, pkt.pts);
-	if (flag == X264_TYPE_IDR)
+	/* rescale output packet timestamp values from codec to stream timebase */
+	// av_packet_rescale_ts(&pkt, m_videoStream->codec->time_base, m_videoStream->time_base);
+
+	if (bKeyFrame)
 		pkt.flags |= AV_PKT_FLAG_KEY;
 
 	int ret = av_interleaved_write_frame(m_oc, &pkt);
 	if (ret != 0) {
 		return false;
 	}
-
 	m_fileLength += size;
-
 	return true;
 }
 
 
-bool QcFFmpegMuxer::writeAudio(unsigned int pts, uint8_t *buf, int size)
+bool QcFFmpegMuxer::writeAudio(int32_t pts, const uint8_t* buf, int size)
 {
-	if (!buf || size < 0 || !m_oc || !m_audio_st) {
-		QmAssertLogBefore(false);
+	if (!buf || size < 0 || !m_oc || !m_audioStream) {
 		return false;
 	}
 
-	//   if( m_lastpts == 0 ) m_lastpts = pts;
-	//   if( m_dwStartTime == 0 || pts < m_dwStartTime ) return true;
-	if (m_lastpts > pts) return true;
-	if (m_dwStartTimeAudio == 0)
-		m_dwStartTimeAudio = pts;
+	AVRational timebase = m_audioStream->codec->time_base;
+	int64_t timeMs = QmBaseTimeToMSTime(pts, timebase);
+	if (m_startTimeMs == AV_NOPTS_VALUE)
+	{
+		m_startTimeMs = timeMs;
+	}
+	timeMs -= m_startTimeMs;
+	if (timeMs > m_muxerTime.load())
+		m_muxerTime.store(timeMs);
 
 	AVPacket pkt;
 	av_init_packet(&pkt);
-	pkt.data = buf;
+	pkt.data = (uint8_t*)buf;
 	pkt.size = size;
 	pkt.flags |= AV_PKT_FLAG_KEY;
-	pkt.stream_index = m_audio_st->index;
-
-	AVRational bq;
-	bq.num = 1;
-	bq.den = 1000;
-	//  pkt.pts = (pts - m_dwStartTimeAudio)*m_audio_samples/1000; 
-	pkt.pts = av_rescale_q(pts - m_dwStartTimeAudio, bq, m_audio_st->codec->time_base);
+	pkt.stream_index = m_audioStream->index;
+	pkt.pts = QmMSTimeToBaseTime(timeMs, m_audioStream->time_base);
 	pkt.dts = pkt.pts;
-
-	//pkt.pts = m_lastpts; //size / m_audio_st->codec->sample_rate / m_channels; //av_rescale_q(1, bq, m_audio_st->codec->time_base);
-	//m_lastpts += size / m_channels / av_get_bytes_per_sample( m_audio_st->codec->sample_fmt );
-	//   pkt.dts = pkt.pts; 
-
-	int ntime = pts - m_lastpts;
-	if (ntime <= 0) ntime = 20;
-	pkt.duration = ntime;
-	m_lastpts = pts;
-	//Utils::DebugPrint("writeAudio m_dwStartTime:%d pkt.pts: %d pkt.duration: %d\n", m_dwStartTime,  (int)pkt.pts, (int)pkt.duration);
+	// av_packet_rescale_ts(&pkt, m_audioStream->codec->time_base, m_audioStream->time_base);
 
 	int ret = av_interleaved_write_frame(m_oc, &pkt);
 	if (ret != 0) {

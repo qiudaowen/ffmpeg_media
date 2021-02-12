@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <algorithm>
 
@@ -47,6 +47,16 @@ namespace
 		FOURCC_Unknown = 0,
 	};
 }
+
+struct QsVideoParam
+{
+	int width;
+	int height;
+	int fps;
+	int codecID;
+	int bitRate; //0, use crf
+	int crf;	 //(0~51), -1 is invalid
+};
 
 namespace video {
 	inline uint32_t CalBufNeedSize(int width, int height, int format)

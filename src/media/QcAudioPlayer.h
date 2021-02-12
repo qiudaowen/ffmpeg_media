@@ -5,7 +5,7 @@
 #include "media_global.h"
 #include "QsAudiodef.h"
 
-struct QsAudioPara;
+struct QsAudioParam;
 class WASAPIPlayer;
 struct QcAudioPlayerPrivate;
 class MEDIA_API QcAudioPlayer
@@ -14,9 +14,9 @@ public:
 	QcAudioPlayer();
 	~QcAudioPlayer();
 
-	bool open(const wchar_t* deviceID, const QsAudioPara* paras, QsAudioPara* pClosestMatch = nullptr);
+	bool open(const wchar_t* deviceID, const QsAudioParam* paras, QsAudioParam* pClosestMatch = nullptr);
 	bool isOpen() const;
-	const QsAudioPara& getAudioPara() const;
+	const QsAudioParam& getAudioPara() const;
     void start();
     void stop();
 	void close();
