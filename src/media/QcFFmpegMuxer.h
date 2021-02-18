@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <atomic>
 
 #include "media_global.h"
 #include "QcBuffer.h"

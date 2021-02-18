@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <stdarg.h>
+#include <algorithm>
 
 #define QmLocker(cs) std::unique_lock<decltype(cs)> QmUniqueVarName(cs)
 

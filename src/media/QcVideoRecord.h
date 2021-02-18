@@ -2,6 +2,7 @@
 
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 #include "media_global.h"
 #include "QsMediaInfo.h"

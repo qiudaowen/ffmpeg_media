@@ -54,6 +54,12 @@
     <ClInclude Include="CaptureModel.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="AudioMuxerModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RecordModel.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="VideoPlayer.cpp">
@@ -84,6 +90,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CaptureModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioMuxerModel.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RecordModel.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
